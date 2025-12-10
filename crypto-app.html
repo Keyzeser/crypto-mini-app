@@ -3,402 +3,491 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Шифратор сообщений</title>
-  <!-- Telegram WebApp SDK -->
+  <title>Шифрование сообщений</title>
+  <!-- Подключение Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root {
-      --bg-color: var(--tg-theme-bg-color, #f0f0f0);
-      --text-color: var(--tg-theme-text-color, #000);
-      --button-color: var(--tg-theme-button-color, #2AABEE);
-      --button-text-color: var(--tg-theme-button-text-color, #fff);
-      --bubble-outgoing: #dcf8c6; /* светло-зелёный (как исходящее в WhatsApp) */
-      --bubble-incoming: #fff;    /* белый для входящих */
-      --bubble-text-out: #000;
-      --bubble-text-in: #000;
-    }
+    /* Оформление с учётом темы Telegram через CSS-переменные */
     body {
-      margin: 0; padding: 0;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      display: flex; flex-direction: column;
-      height: 100vh; /* полный экран */
-    }
-    header {
-      padding: 10px; text-align: center; font-size: 1.1em;
-      font-weight: bold;
-      background: var(--tg-theme-secondary-bg-color, #e8e8e8);
+      background-color: var(--tg-theme-bg-color);
+      color: var(--tg-theme-text-color);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+      margin: 0;
+      padding: 10px;
+      /* Учитываем безопасные отступы (notch) */
+      padding-top: calc(10px + var(--tg-safe-area-inset-top, 0));
+      padding-bottom: calc(10px + var(--tg-safe-area-inset-bottom, 0));
     }
     #chat {
-      flex: 1; overflow-y: auto;
-      padding: 10px;
+      display: flex;
+      flex-direction: column;
     }
     .message {
-      max-width: 80%; padding: 8px 12px;
-      margin: 5px; border-radius: 12px;
-      word-wrap: break-word;
-      line-height: 1.4;
+      max-width: 80%;
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 8px;
+      word-break: break-word;
+      opacity: 0; /* для анимации появления */
     }
-    .outgoing { /* исходящее сообщение (пользователя) */
-      background: var(--bubble-outgoing);
-      color: var(--bubble-text-out);
-      align-self: flex-end;
-      border-bottom-right-radius: 0; /* фигурный хвост - убираем скругление с одного края */
-    }
-    .incoming { /* входящее сообщение (результат) */
-      background: var(--bubble-incoming);
-      color: var(--bubble-text-in);
+    .incoming {
       align-self: flex-start;
-      border-bottom-left-radius: 0;
-      border: 1px solid #e0e0e0;
+      background-color: var(--tg-theme-secondary-bg-color, #e0e0e0);
+      color: var(--tg-theme-text-color);
+      border-top-left-radius: 0; /* убрать скругление верхнего левого угла */
     }
-    form {
-      display: flex; flex-wrap: wrap;
-      padding: 10px;
-      background: var(--tg-theme-secondary-bg-color, #e8e8e8);
+    .outgoing {
+      align-self: flex-end;
+      background-color: var(--tg-theme-button-color);
+      color: var(--tg-theme-button-text-color);
+      border-top-right-radius: 0; /* убрать скругление верхнего правого угла */
     }
-    select, input[type=text] {
-      font: inherit;
-      margin: 2px;
+    /* Анимации появления сообщений */
+    .message.fade-in-left {
+      animation: fadeInLeft 0.3s forwards;
     }
-    select {
-      flex: 1 1 40%; min-width: 120px;
+    .message.fade-in-right {
+      animation: fadeInRight 0.3s forwards;
     }
-    #keyInput {
-      flex: 1 1 30%; min-width: 100px;
+    @keyframes fadeInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
-    #textInput {
-      flex: 1 1 100%; /* textarea occupies full width */
-      min-height: 50px;
-      margin: 5px 2px;
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
-    button {
-      flex: 1 1 45%; min-width: 100px;
-      margin: 2px;
-      background: var(--button-color);
-      color: var(--button-text-color);
-      border: none; border-radius: 4px;
-      padding: 8px;
-      font: inherit; font-weight: bold;
+    /* Стили для кнопок */
+    .button {
+      display: inline-block;
+      background: var(--tg-theme-button-color);
+      color: var(--tg-theme-button-text-color);
+      border: none;
+      padding: 6px 12px;
+      margin: 4px 2px;
+      border-radius: 6px;
+      font-size: 14px;
       cursor: pointer;
+      opacity: 0; /* изначально прозрачна для анимации */
     }
-    button:active { opacity: 0.9; }
-    #genKeyBtn {
-      flex: 0 0 auto;
-      background: #ccc;
-      color: #000;
-      font-size: 1.2em;
-      padding: 0 8px;
+    .button.fade-in {
+      animation: fadeIn 0.3s forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    /* Стили для полей ввода */
+    .input-field {
+      margin: 4px 0;
+      display: block;
+      width: 90%;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .input-group {
+      margin: 8px 0;
+    }
+    /* Стиль всплывающего уведомления скопирования */
+    #copy-notice {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s;
     }
   </style>
 </head>
 <body>
-  <header>🔐 Шифратор сообщений</header>
+  <!-- Основной контейнер чата -->
   <div id="chat"></div>
-  <form onsubmit="return false;">
-    <textarea id="textInput" placeholder="Введите сообщение..."></textarea>
-    <select id="methodSelect">
-      <option value="caesar">Цезарь</option>
-      <option value="atbash">Атбаш</option>
-      <option value="vigenere">Виженер</option>
-      <option value="base64">Base64</option>
-      <option value="fernet">Псевдо-Fernet</option>
-    </select>
-    <input type="text" id="keyInput" placeholder="Ключ" />
-    <button type="button" id="genKeyBtn" title="Сгенерировать ключ">🎲</button>
-    <button type="button" id="encryptBtn">Зашифровать</button>
-    <button type="button" id="decryptBtn">Расшифровать</button>
-  </form>
-
+  <!-- Всплывающее уведомление при копировании -->
+  <div id="copy-notice">Скопировано</div>
   <script>
+    // Инициализация Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    if (tg) {
+      tg.ready();
+    }
+    // Глобальные переменные состояния
+    let currentCipher = null;
+    let userText = '';
+    let userKey = '';
+    // Получаем элементы DOM
     const chat = document.getElementById('chat');
-    const textInput = document.getElementById('textInput');
-    const methodSelect = document.getElementById('methodSelect');
-    const keyInput = document.getElementById('keyInput');
-    const encryptBtn = document.getElementById('encryptBtn');
-    const decryptBtn = document.getElementById('decryptBtn');
-    const genKeyBtn = document.getElementById('genKeyBtn');
-
-    // Доступные алфавиты
-    const alphabetEng = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const alphabetRus = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
-    // Вспомогательная функция: определяет алфавит буквы (латиница/кириллица) и возвращает соответствующий массив
-    function getAlphabet(char) {
-      const upper = char.toUpperCase();
-      if (alphabetEng.indexOf(upper) !== -1) return alphabetEng;
-      if (alphabetRus.indexOf(upper) !== -1) return alphabetRus;
-      return null;
+    const copyNotice = document.getElementById('copy-notice');
+    // История сообщений для localStorage
+    let history = [];
+    const savedHistory = localStorage.getItem('chatHistory');
+    if (savedHistory) {
+      history = JSON.parse(savedHistory);
+      // Восстанавливаем историю в интерфейсе
+      history.forEach(msg => {
+        addMessage(msg.text, msg.type, false);
+      });
     }
-
-    function encryptCaesar(text, shift) {
-      let result = "";
-      shift = (shift % 33 + 33) % 33; // нормализуем сдвиг (для 33 букв максимум, хватит и для 26)
-      for (let ch of text) {
-        const alphabet = getAlphabet(ch);
-        if (!alphabet) { 
-          result += ch; // не буква, не меняем
-        } else {
-          const isLower = (ch === ch.toLowerCase());
-          const baseIndex = alphabet.indexOf(ch.toUpperCase());
-          // Для латиницы используем мод 26, для кириллицы мод 33:
-          const mod = alphabet.length;
-          let newIndex = (baseIndex + shift) % mod;
-          if (newIndex < 0) newIndex += mod;
-          let newChar = alphabet[newIndex];
-          if (isLower) newChar = newChar.toLowerCase();
-          result += newChar;
-        }
-      }
-      return result;
-    }
-    function decryptCaesar(text, shift) {
-      // расшифровка Цезаря — сдвиг в обратную сторону
-      return encryptCaesar(text, -shift);
-    }
-
-    function encryptAtbash(text) {
-      let result = "";
-      for (let ch of text) {
-        const alphabet = getAlphabet(ch);
-        if (!alphabet) {
-          result += ch;
-        } else {
-          const isLower = (ch === ch.toLowerCase());
-          const idx = alphabet.indexOf(ch.toUpperCase());
-          // n -> m-n-1
-          const newIdx = alphabet.length - idx - 1;
-          let newChar = alphabet[newIdx];
-          if (isLower) newChar = newChar.toLowerCase();
-          result += newChar;
-        }
-      }
-      return result;
-    }
-    const decryptAtbash = encryptAtbash; // обратное преобразование Атбаш такое же
-
-    function encryptVigenere(text, key, decrypt=false) {
-      let result = "";
-      if (!key) return text;
-      let keyIndex = 0;
-      for (let ch of text) {
-        const alphabet = getAlphabet(ch);
-        if (!alphabet) {
-          result += ch;
-        } else {
-          const isLower = (ch === ch.toLowerCase());
-          const charIdx = alphabet.indexOf(ch.toUpperCase());
-          const keyChar = key[keyIndex % key.length];
-          const keyAlphabet = getAlphabet(keyChar) || alphabet; 
-          // Если символ ключа не буква (маловероятно, но на всякий случай) или ключ на другом языке,
-          // то по умолчанию берём тот же алфавит что и текст.
-          const keyIdx = keyAlphabet.indexOf(keyChar.toUpperCase());
-          let newIdx;
-          if (!decrypt) {
-            newIdx = (charIdx + keyIdx) % alphabet.length;
-          } else {
-            newIdx = (charIdx - keyIdx) % alphabet.length;
-            if (newIdx < 0) newIdx += alphabet.length;
-          }
-          let newChar = alphabet[newIdx];
-          if (isLower) newChar = newChar.toLowerCase();
-          result += newChar;
-          keyIndex++;
-        }
-      }
-      return result;
-    }
-    function decryptVigenere(text, key) {
-      return encryptVigenere(text, key, true);
-    }
-
-    function encryptBase64(text) {
-      // Кодируем в UTF-8 и потом в Base64
-      const utf8Bytes = new TextEncoder().encode(text);
-      let binaryStr = "";
-      utf8Bytes.forEach(b => { binaryStr += String.fromCharCode(b); });
-      return btoa(binaryStr);
-    }
-    function decryptBase64(base64) {
-      try {
-        const binaryStr = atob(base64);
-        // Преобразуем в Uint8Array
-        const bytes = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
-        return new TextDecoder().decode(bytes);
-      } catch(e) {
-        return "[Ошибка декодирования Base64]";
-      }
-    }
-
-    function encryptFernet(text, key) {
-      if (!key) return text;
-      // XOR encryption + Base64
-      const textBytes = new TextEncoder().encode(text);
-      const keyBytes = new TextEncoder().encode(key);
-      const outBytes = textBytes.map((byte, i) => byte ^ keyBytes[i % keyBytes.length]);
-      // convert outBytes to binary string for btoa
-      let binaryStr = "";
-      outBytes.forEach(b => { binaryStr += String.fromCharCode(b); });
-      return btoa(binaryStr);
-    }
-    function decryptFernet(cipherText, key) {
-      if (!key) return cipherText;
-      try {
-        const binaryStr = atob(cipherText);
-        const encryptedBytes = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
-        const keyBytes = new TextEncoder().encode(key);
-        const outBytes = encryptedBytes.map((byte, i) => byte ^ keyBytes[i % keyBytes.length]);
-        return new TextDecoder().decode(outBytes);
-      } catch(e) {
-        return "[Ошибка расшифровки]";
-      }
-    }
-
-    // Функция для добавления сообщения в чат и localStorage
-    function addMessage(text, type) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = "message " + (type === 'user' ? 'outgoing' : 'incoming');
-      msgDiv.textContent = text;
-      // Добавляем в чат и прокручиваем вниз
-      chat.appendChild(msgDiv);
-      chat.scrollTop = chat.scrollHeight;
-      // Запись в историю (localStorage)
-      saveHistoryItem({ role: type, method: methodSelect.value, text: text });
-    }
-
-    // LocalStorage: хранение истории
-    const HISTORY_KEY = "encryptChatHistory";
-    function saveHistoryItem(item) {
-      let history = [];
-      try {
-        history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
-      } catch(e) {
-        history = [];
-      }
-      history.push(item);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-    }
-    function loadHistory() {
-      try {
-        const history = JSON.parse(localStorage.getItem(HISTORY_KEY));
-        if (history && Array.isArray(history)) {
-          for (let item of history) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = "message " + (item.role === 'user' ? 'outgoing' : 'incoming');
-            msgDiv.textContent = item.text;
-            chat.appendChild(msgDiv);
-          }
-          // Прокручиваем историю вниз
-          chat.scrollTop = chat.scrollHeight;
-        }
-      } catch(e) { /* нет валидной истории */}
-    }
-    loadHistory();
-
-    // Обработка выбора метода: включение/выключение поля ключа
-    methodSelect.addEventListener('change', () => {
-      const method = methodSelect.value;
-      if (method === 'atbash' || method === 'base64') {
-        keyInput.disabled = true;
-        keyInput.placeholder = "ключ не нужен";
+    // Функция добавления сообщения в чат
+    function addMessage(text, type = 'incoming', animate = true) {
+      const msgElem = document.createElement('div');
+      msgElem.className = 'message ' + (type === 'incoming' ? 'incoming' : 'outgoing');
+      msgElem.textContent = text;
+      if (animate) {
+        // Применяем соответствующую анимацию появления
+        msgElem.classList.add(type === 'incoming' ? 'fade-in-left' : 'fade-in-right');
+        // После окончания анимации удаляем класс, чтобы повторно не анимировать при перерисовке
+        msgElem.addEventListener('animationend', () => {
+          msgElem.classList.remove(type === 'incoming' ? 'fade-in-left' : 'fade-in-right');
+        });
       } else {
-        keyInput.disabled = false;
-        keyInput.placeholder = "Ключ";
+        msgElem.style.opacity = '1';
       }
-    });
-
-    // Генерация случайного ключа при нажатии 🎲
-    genKeyBtn.addEventListener('click', () => {
-      const method = methodSelect.value;
-      let newKey = "";
-      if (method === 'caesar') {
-        // случайное число 1- (алфавит-1)
-        newKey = Math.ceil(Math.random() * 25).toString(); // для англ. 25; если рус, можно до 32
-      } else if (method === 'vigenere') {
-        const alphabet = alphabetEng; // по умолчанию англ, можно улучшить: если текст рус, генерировать русские
-        const length = 5 + Math.floor(Math.random()*5); // длина 5-9
-        for (let i=0; i<length; i++) {
-          newKey += alphabet.charAt(Math.floor(Math.random()*alphabet.length));
-        }
-      } else if (method === 'fernet') {
-        // псевдо-Fernet: генерируем 16-символьный буквенно-цифровой ключ
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        for (let i=0; i<16; i++) {
-          newKey += chars.charAt(Math.floor(Math.random()*chars.length));
-        }
+      chat.appendChild(msgElem);
+      chat.scrollTop = chat.scrollHeight;
+      // Сохранение сообщения в историю и запись в localStorage
+      history.push({ text, type });
+      localStorage.setItem('chatHistory', JSON.stringify(history));
+    }
+    // Отображение кнопок с вариантами шифров
+    function showCipherOptions() {
+      const ciphers = [
+        { id: 'caesar', label: 'Цезарь' },
+        { id: 'atbash', label: 'Атбаш' },
+        { id: 'vigenere', label: 'Виженер' },
+        { id: 'base64', label: 'Base64' },
+        { id: 'fernet', label: 'Псевдо-Fernet' }
+      ];
+      const optionsElem = document.createElement('div');
+      ciphers.forEach(c => {
+        const btn = document.createElement('button');
+        btn.textContent = c.label;
+        btn.className = 'button';
+        btn.addEventListener('click', () => {
+          // Пользователь выбрал шифр
+          optionsElem.remove(); // убираем кнопки выбора
+          currentCipher = c.id;
+          addMessage(c.label, 'outgoing'); // показываем выбор пользователя как исходящее сообщение
+          askForInput();
+        });
+        optionsElem.appendChild(btn);
+      });
+      chat.appendChild(optionsElem);
+      // Анимация постепенного появления кнопок с небольшой задержкой между ними
+      const btns = optionsElem.querySelectorAll('.button');
+      btns.forEach((b, index) => {
+        setTimeout(() => b.classList.add('fade-in'), 50 * index);
+      });
+    }
+    // Запрос ввода текста и ключа (если нужен) после выбора шифра
+    function askForInput() {
+      // Сообщение-подсказка от бота
+      let promptText = 'Введите текст для ';
+      if (currentCipher === 'base64' || currentCipher === 'fernet') {
+        promptText += 'кодирования/декодирования:';
+      } else {
+        promptText += 'шифрования/дешифрования:';
       }
-      if (newKey) {
-        keyInput.value = newKey;
+      addMessage(promptText, 'incoming');
+      // Форма ввода (контейнер)
+      const form = document.createElement('div');
+      form.className = 'input-group';
+      // Многострочное поле для текста
+      const textInput = document.createElement('textarea');
+      textInput.placeholder = 'Ваш текст';
+      textInput.className = 'input-field';
+      textInput.rows = 3;
+      form.appendChild(textInput);
+      let keyInput = null;
+      // Если для текущего шифра нужен ключ
+      if (currentCipher === 'caesar' || currentCipher === 'vigenere' || currentCipher === 'fernet') {
+        keyInput = document.createElement('input');
+        keyInput.placeholder = currentCipher === 'caesar' ? 'Ключ (число)' : 'Ключ (текст)';
+        keyInput.className = 'input-field';
+        keyInput.type = 'text';
+        form.appendChild(keyInput);
+        // Кнопка генерации случайного ключа
+        const genBtn = document.createElement('button');
+        genBtn.textContent = '🎲';
+        genBtn.className = 'button';
+        genBtn.style.padding = '6px 8px';
+        genBtn.title = 'Сгенерировать случайный ключ';
+        genBtn.addEventListener('click', () => {
+          if (!keyInput) return;
+          if (currentCipher === 'caesar') {
+            // Генерируем случайное число от 1 до 32 для шифра Цезаря
+            keyInput.value = Math.floor(Math.random() * 32) + 1;
+          } else if (currentCipher === 'vigenere') {
+            // Генерируем случайный буквенный ключ длиной 5 (латиница)
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            let randKey = '';
+            for (let i = 0; i < 5; i++) {
+              randKey += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            }
+            keyInput.value = randKey;
+          } else if (currentCipher === 'fernet') {
+            // Генерируем 16 случайных байтов и кодируем их в Base64 как ключ
+            const bytes = new Uint8Array(16);
+            window.crypto.getRandomValues(bytes);
+            keyInput.value = btoa(String.fromCharCode(...bytes));
+          }
+        });
+        form.appendChild(genBtn);
       }
-    });
-
-    // Обработчики кнопок шифрования/дешифрования
-    encryptBtn.addEventListener('click', () => {
-      const method = methodSelect.value;
-      const text = textInput.value;
-      if (!text) return;
-      const key = keyInput.value;
-      // Добавляем сообщение пользователя в историю (исходный текст)
-      addMessage(text, 'user');
-      // Выбираем алгоритм
-      let result;
-      switch(method) {
-        case 'caesar':
+      // Кнопки "Зашифровать" и "Расшифровать"
+      const encBtn = document.createElement('button');
+      encBtn.textContent = 'Зашифровать';
+      encBtn.className = 'button';
+      const decBtn = document.createElement('button');
+      decBtn.textContent = 'Расшифровать';
+      decBtn.className = 'button';
+      form.appendChild(encBtn);
+      form.appendChild(decBtn);
+      // Обработчики нажатия кнопок шифрования/дешифрования
+      encBtn.addEventListener('click', () => {
+        userText = textInput.value;
+        userKey = keyInput ? keyInput.value : '';
+        handleEncryption(true);
+        form.remove();
+      });
+      decBtn.addEventListener('click', () => {
+        userText = textInput.value;
+        userKey = keyInput ? keyInput.value : '';
+        handleEncryption(false);
+        form.remove();
+      });
+      chat.appendChild(form);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    // Функция обработки шифрования/дешифрования на основе выбранного алгоритма
+    function handleEncryption(isEncrypt) {
+      let result = '';
+      const text = userText || '';
+      const key = userKey || '';
+      switch (currentCipher) {
+        case 'caesar': {
           const shift = parseInt(key) || 0;
-          result = encryptCaesar(text, shift);
+          result = caesarCipher(text, shift, isEncrypt);
           break;
-        case 'atbash':
-          result = encryptAtbash(text);
+        }
+        case 'atbash': {
+          result = atbashCipher(text);
           break;
-        case 'vigenere':
-          result = encryptVigenere(text, key || "A"); // если ключ не указан, используем "A" (эффект нулевой)
+        }
+        case 'vigenere': {
+          result = vigenereCipher(text, key, isEncrypt);
           break;
-        case 'base64':
-          result = encryptBase64(text);
+        }
+        case 'base64': {
+          if (isEncrypt) {
+            // Кодирование в Base64
+            try {
+              result = btoa(unescape(encodeURIComponent(text)));
+            } catch (e) {
+              result = '<ошибка кодирования Base64>';
+            }
+          } else {
+            try {
+              result = decodeURIComponent(escape(atob(text)));
+            } catch (e) {
+              result = '<ошибка декодирования Base64>';
+            }
+          }
           break;
-        case 'fernet':
-          result = encryptFernet(text, key || "");
+        }
+        case 'fernet': {
+          // XOR + Base64
+          try {
+            if (isEncrypt) {
+              const encrypted = xorEncrypt(text, key);
+              result = btoa(encrypted);
+            } else {
+              const decoded = atob(text);
+              result = xorEncrypt(decoded, key); // повторный XOR тем же ключом
+            }
+          } catch (e) {
+            result = '<ошибка в Fernet>';
+          }
           break;
+        }
       }
-      addMessage(result, 'app');
-      textInput.value = ""; // очистить поле ввода
-    });
-    decryptBtn.addEventListener('click', () => {
-      const method = methodSelect.value;
-      const cipherText = textInput.value;
-      if (!cipherText) return;
-      const key = keyInput.value;
-      // Добавляем сообщение пользователя (шифротекст) в историю
-      addMessage(cipherText, 'user');
-      let result;
-      switch(method) {
-        case 'caesar':
-          const shift = parseInt(key) || 0;
-          result = decryptCaesar(cipherText, shift);
-          break;
-        case 'atbash':
-          result = decryptAtbash(cipherText);
-          break;
-        case 'vigenere':
-          result = decryptVigenere(cipherText, key || "A");
-          break;
-        case 'base64':
-          result = decryptBase64(cipherText);
-          break;
-        case 'fernet':
-          result = decryptFernet(cipherText, key || "");
-          break;
+      // Выводим результат в чат
+      addMessage(result, 'incoming');
+      // Сделаем результат копируемым при клике
+      const messages = document.getElementsByClassName('message');
+      const lastMessage = messages[messages.length - 1];
+      lastMessage.style.cursor = 'pointer';
+      lastMessage.addEventListener('click', () => copyToClipboard(result));
+      // После результата предлагаем выбрать новый шифр
+      addMessage('Выберите следующий шифр или выполните другую операцию:', 'incoming');
+      showCipherOptions();
+    }
+    // Реализация алгоритмов шифрования:
+    function caesarCipher(text, shift, encrypt = true) {
+      const ruLower = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+      const ruUpper = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+      const enLower = 'abcdefghijklmnopqrstuvwxyz';
+      const enUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const nRu = ruLower.length;  // 33
+      const nEn = enLower.length;  // 26
+      shift = shift % nRu;
+      if (!encrypt) {
+        shift = -shift;
       }
-      addMessage(result, 'app');
-      textInput.value = "";
-    });
-
-    // Инициализуем тему Telegram (при старте и при смене)
-    Telegram.WebApp.onEvent('themeChanged', () => {
-      document.body.style.backgroundColor = Telegram.WebApp.themeParams.bg_color || "#ffffff";
-      document.body.style.color = Telegram.WebApp.themeParams.text_color || "#000000";
-    });
-    Telegram.WebApp.ready(); // Сообщаем, что интерфейс отрисован
+      let result = '';
+      for (let char of text) {
+        if (ruLower.includes(char)) {
+          let idx = ruLower.indexOf(char);
+          idx = (idx + shift + nRu) % nRu;
+          result += ruLower[idx];
+        } else if (ruUpper.includes(char)) {
+          let idx = ruUpper.indexOf(char);
+          idx = (idx + shift + nRu) % nRu;
+          result += ruUpper[idx];
+        } else if (enLower.includes(char)) {
+          let idx = enLower.indexOf(char);
+          idx = (idx + shift + nEn) % nEn;
+          result += enLower[idx];
+        } else if (enUpper.includes(char)) {
+          let idx = enUpper.indexOf(char);
+          idx = (idx + shift + nEn) % nEn;
+          result += enUpper[idx];
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+    function atbashCipher(text) {
+      const ruLower = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+      const ruUpper = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+      const enLower = 'abcdefghijklmnopqrstuvwxyz';
+      const enUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let result = '';
+      for (let char of text) {
+        if (ruLower.includes(char)) {
+          let idx = ruLower.indexOf(char);
+          result += ruLower[ruLower.length - 1 - idx];
+        } else if (ruUpper.includes(char)) {
+          let idx = ruUpper.indexOf(char);
+          result += ruUpper[ruUpper.length - 1 - idx];
+        } else if (enLower.includes(char)) {
+          let idx = enLower.indexOf(char);
+          result += enLower[enLower.length - 1 - idx];
+        } else if (enUpper.includes(char)) {
+          let idx = enUpper.indexOf(char);
+          result += enUpper[enUpper.length - 1 - idx];
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+    function vigenereCipher(text, key, encrypt = true) {
+      const ruLower = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя';
+      const ruUpper = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+      const enLower = 'abcdefghijklmnopqrstuvwxyz';
+      const enUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let result = '';
+      let keyIndex = 0;
+      for (let char of text) {
+        const kChar = key[keyIndex % key.length];
+        if (!kChar) {
+          // Если ключ пустой или закончился
+          result += char;
+          continue;
+        }
+        if (ruLower.includes(char)) {
+          const base = ruLower;
+          const shift = ruLower.indexOf(kChar.toLowerCase());
+          let idx = base.indexOf(char);
+          idx = (idx + (encrypt ? shift : -shift) + base.length) % base.length;
+          result += base[idx];
+          keyIndex++;
+        } else if (ruUpper.includes(char)) {
+          const base = ruUpper;
+          const shift = ruLower.indexOf(kChar.toLowerCase());
+          let idx = base.indexOf(char);
+          idx = (idx + (encrypt ? shift : -shift) + base.length) % base.length;
+          result += base[idx];
+          keyIndex++;
+        } else if (enLower.includes(char)) {
+          const base = enLower;
+          const shift = enLower.indexOf(kChar.toLowerCase());
+          let idx = base.indexOf(char);
+          idx = (idx + (encrypt ? shift : -shift) + base.length) % base.length;
+          result += base[idx];
+          keyIndex++;
+        } else if (enUpper.includes(char)) {
+          const base = enUpper;
+          const shift = enLower.indexOf(kChar.toLowerCase());
+          let idx = base.indexOf(char);
+          idx = (idx + (encrypt ? shift : -shift) + base.length) % base.length;
+          result += base[idx];
+          keyIndex++;
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+    function xorEncrypt(text, key) {
+      if (!key) return text;
+      let result = '';
+      // Применяем XOR посимвольно, циклично по ключу
+      for (let i = 0; i < text.length; i++) {
+        const keyChar = key.charCodeAt(i % key.length);
+        const textChar = text.charCodeAt(i);
+        const xorChar = keyChar ^ textChar;
+        result += String.fromCharCode(xorChar);
+      }
+      return result;
+    }
+    // Функция копирования результата в буфер обмена
+    function copyToClipboard(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showCopyNotice();
+        });
+      } else {
+        // Фоллбэк для старых браузеров
+        const tempInput = document.createElement('textarea');
+        tempInput.value = text;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+          document.execCommand('copy');
+          showCopyNotice();
+        } catch (err) {
+          console.error('Ошибка копирования', err);
+        }
+        document.body.removeChild(tempInput);
+      }
+    }
+    // Показать уведомление "Скопировано" на короткое время
+    function showCopyNotice() {
+      copyNotice.style.display = 'block';
+      copyNotice.style.opacity = '1';
+      setTimeout(() => {
+        copyNotice.style.opacity = '0';
+        setTimeout(() => {
+          copyNotice.style.display = 'none';
+        }, 300);
+      }, 1000);
+    }
+    // Запуск приложения: если история пуста, выводим приветствие
+    if (!savedHistory) {
+      addMessage('Привет! 🔐 Выберите шифр для работы:', 'incoming');
+    }
+    // Всегда отображаем кнопки выбора шифра в начале или после операции
+    showCipherOptions();
   </script>
 </body>
 </html>
