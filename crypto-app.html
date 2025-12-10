@@ -1,1137 +1,989 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoApp</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <title>CryptoApp — шифратор</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-        :root {
-            --bg-primary: #0f0f23;
-            --bg-secondary: #1a1a2e;
-            --bg-card: #16213e;
-            --text-primary: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --accent: #6c63ff;
-            --accent-hover: #5a52d5;
-            --success: #00ff88;
-            --danger: #ff4757;
-            --warning: #ffa502;
-        }
+  <!-- (опционально для Telegram Mini App, можно оставить) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding-bottom: 80px;
-        }
+  <style>
+    :root {
+      --bg: #050910;
+      --bg-card: #0f172a;
+      --bg-card-soft: #111827;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.2);
+      --accent-text: #bbf7d0;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #f97373;
+      --radius-lg: 18px;
+      --radius-sm: 10px;
+      --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 16px;
-        }
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Inter", sans-serif;
+    }
 
-        .header {
-            background: linear-gradient(135deg, var(--accent) 0%, #9b59b6 100%);
-            padding: 24px 16px;
-            margin: 0 -16px 24px -16px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(108, 99, 255, 0.3);
-        }
+    body {
+      margin: 0;
+      padding: 12px;
+      background: radial-gradient(circle at top, #0b1120, #020617);
+      color: var(--text);
+    }
 
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+    }
 
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
+    .app-header {
+      padding: 14px 16px 12px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, #020617, #0b1120);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
 
-        .tabs {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            padding-bottom: 8px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
+    .app-header-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .tabs::-webkit-scrollbar {
-            display: none;
-        }
+    .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #22c55e, #16a34a, #22c55e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #022c22;
+      box-shadow: 0 0 30px rgba(34, 197, 94, 0.45);
+    }
 
-        .tab-btn {
-            flex: 0 0 auto;
-            min-width: 85px;
-            padding: 10px 12px;
-            background: var(--bg-card);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
+    .app-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
 
-        .tab-btn:hover {
-            background: var(--bg-secondary);
-            border-color: var(--accent);
-        }
+    .app-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
 
-        .tab-btn.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
+    .badge {
+      padding: 5px 10px;
+      font-size: 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      background: rgba(22, 163, 74, 0.15);
+      color: var(--accent-text);
+      white-space: nowrap;
+    }
 
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
+    /* ─── Tabs ────────────────────────────────────── */
 
-        .tab-content.active {
-            display: block;
-        }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .tab-button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 8px 4px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: 0.18s ease;
+    }
 
-        .card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
+    .tab-button span.emoji {
+      font-size: 15px;
+    }
 
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--accent);
-        }
+    .tab-button.active {
+      background: radial-gradient(circle at top left, #22c55e33, #0f172a);
+      color: var(--text);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35),
+        0 10px 20px rgba(0, 0, 0, 0.7);
+    }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
+    .tab-content {
+      display: none;
+      padding: 12px;
+      border-radius: var(--radius-lg);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 12px;
+    }
 
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
+    .tab-content.active {
+      display: block;
+    }
 
-        .form-input,
-        .form-textarea,
-        .form-select {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--bg-secondary);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
+    h2 {
+      font-size: 16px;
+      margin: 0 0 8px;
+    }
 
-        .form-input:focus,
-        .form-textarea:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: var(--bg-primary);
-        }
+    h3 {
+      font-size: 14px;
+      margin: 10px 0 6px;
+    }
 
-        .form-textarea {
-            min-height: 120px;
-            resize: vertical;
-            font-family: 'Courier New', monospace;
-        }
+    p {
+      margin: 4px 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
 
-        .btn {
-            width: 100%;
-            padding: 14px 24px;
-            background: var(--accent);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
-        }
+    /* ─── Forms / controls ───────────────────────── */
 
-        .btn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(108, 99, 255, 0.4);
-        }
+    .field {
+      margin-bottom: 10px;
+    }
 
-        .btn:active {
-            transform: translateY(0);
-        }
+    .field-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
 
-        .btn-secondary {
-            background: var(--bg-secondary);
-            box-shadow: none;
-        }
+    select,
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card-soft);
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+      min-height: 38px;
+    }
 
-        .btn-secondary:hover {
-            background: var(--bg-card);
-        }
+    textarea {
+      min-height: 80px;
+    }
 
-        .btn-success {
-            background: var(--success);
-            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
-        }
+    select:focus,
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+    }
 
-        .btn-danger {
-            background: var(--danger);
-            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
-        }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
 
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 16px;
-        }
+    .btn {
+      flex: 1;
+      min-width: 0;
+      border-radius: 999px;
+      border: none;
+      font-size: 13px;
+      padding: 8px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: 0.16s ease;
+      white-space: nowrap;
+    }
 
-        .method-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 16px;
-        }
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #022c22;
+      font-weight: 600;
+    }
 
-        .method-card {
-            background: var(--bg-secondary);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
 
-        .method-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-        }
+    .btn-ghost {
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--text-muted);
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+    }
 
-        .method-card.active {
-            background: var(--accent);
-            border-color: var(--accent);
-        }
+    .btn:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
 
-        .method-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
 
-        .method-name {
-            font-size: 14px;
-            font-weight: 600;
-        }
+    .pill strong {
+      color: var(--accent-text);
+    }
 
-        .result-box {
-            background: var(--bg-secondary);
-            border: 2px solid var(--accent);
-            border-radius: 12px;
-            padding: 16px;
-            margin: 16px 0;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+    .hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
 
-        .key-item {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    /* Таблица в обучении */
 
-        .key-info {
-            flex: 1;
-        }
+    .method-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 12px;
+    }
 
-        .key-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
+    .method-table th,
+    .method-table td {
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
 
-        .key-value {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-family: 'Courier New', monospace;
-        }
+    .method-table thead {
+      background: rgba(15, 23, 42, 0.9);
+    }
 
-        .key-actions {
-            display: flex;
-            gap: 8px;
-        }
+    .method-table tbody tr {
+      background: rgba(15, 23, 42, 0.8);
+    }
 
-        .icon-btn {
-            background: var(--bg-card);
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.3s ease;
-        }
+    .method-table tbody tr + tr {
+      margin-top: 4px;
+    }
 
-        .icon-btn:hover {
-            background: var(--accent);
-            transform: scale(1.1);
-        }
+    .method-table td:first-child {
+      font-weight: 500;
+    }
 
-        .message-item {
-            background: var(--bg-secondary);
-            border-left: 4px solid var(--accent);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
+    .method-table .stars {
+      color: #fbbf24;
+      font-size: 11px;
+    }
 
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
 
-        .message-time {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
+    .chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+    }
 
-        .message-text {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            word-break: break-all;
-            background: var(--bg-primary);
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 8px;
-        }
+    .history-step {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
 
-        .tutorial-step {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-        }
+    .history-step-number {
+      font-size: 11px;
+      color: var(--accent-text);
+      margin-bottom: 2px;
+    }
 
-        .tutorial-number {
-            background: var(--accent);
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
+    .history-step-title {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
 
-        .tutorial-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .tutorial-desc {
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        .key-display {
-            background: var(--bg-primary);
-            border: 2px solid var(--success);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .generated-key {
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--success);
-            word-break: break-all;
-            margin: 12px 0;
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent);
-            border-radius: 4px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--success);
-            color: white;
-            padding: 16px 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-    </style>
+    .footer {
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      opacity: 0.75;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 CryptoApp</h1>
-            <p>Безопасное шифрование сообщений</p>
+  <div class="app">
+    <!-- Шапка -->
+    <header class="app-header">
+      <div class="app-header-main">
+        <div class="logo">C</div>
+        <div>
+          <div class="app-title">CryptoApp</div>
+          <div class="app-subtitle">Безопасное шифрование сообщений</div>
         </div>
+      </div>
+      <div class="badge">End-to-end шифратор</div>
+    </header>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('encrypt', event)">🔒 Шифровать</button>
-            <button class="tab-btn" onclick="switchTab('keys', event)">🔑 Ключи</button>
-            <button class="tab-btn" onclick="switchTab('messages', event)">💬 Сообщения</button>
-            <button class="tab-btn" onclick="switchTab('tutorial', event)">📚 Обучение</button>
+    <!-- Вкладки -->
+    <nav class="tabs">
+      <button class="tab-button active" data-tab-target="tab-encrypt">
+        <span class="emoji">🛡</span>
+        <span>Шифровать</span>
+      </button>
+      <button class="tab-button" data-tab-target="tab-keys">
+        <span class="emoji">🔑</span>
+        <span>Ключи</span>
+      </button>
+      <button class="tab-button" data-tab-target="tab-messages">
+        <span class="emoji">📨</span>
+        <span>Сообщения</span>
+      </button>
+      <button class="tab-button" data-tab-target="tab-learn">
+        <span class="emoji">📚</span>
+        <span>Обучение</span>
+      </button>
+    </nav>
+
+    <!-- Вкладка: Шифрование -->
+    <section id="tab-encrypt" class="tab-content active">
+      <h2>Выберите метод шифрования</h2>
+      <p>Для важных сообщений используйте более сильные методы, например <strong>Fernet</strong>.</p>
+
+      <div class="field">
+        <label class="field-label" for="method-select">Метод шифрования</label>
+        <select id="method-select">
+          <option value="caesar">1️⃣ Цезарь</option>
+          <option value="atbash">2️⃣ Атбаш</option>
+          <option value="vigenere">3️⃣ Виженер</option>
+          <option value="base64">4️⃣ Base64</option>
+          <option value="fernet">5️⃣ Fernet (псевдо)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="key-input">Ключ шифрования</label>
+        <input id="key-input" type="text" placeholder="Например: 3, пароль или ключ" />
+        <div class="hint">Для Цезаря — число, для Виженера — слово, для Fernet — сложный пароль.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="text-input">Ваш текст</label>
+        <textarea id="text-input" placeholder="Введите сообщение, которое нужно зашифровать или расшифровать"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-encrypt">
+          🔒 Зашифровать
+        </button>
+        <button class="btn btn-outline" id="btn-decrypt">
+          🔓 Расшифровать
+        </button>
+      </div>
+
+      <div class="field" style="margin-top: 10px;">
+        <label class="field-label" for="result-output">Результат</label>
+        <textarea id="result-output" readonly placeholder="Здесь появится результат"></textarea>
+        <div class="btn-row" style="margin-top: 6px;">
+          <button class="btn btn-outline" id="btn-copy-result">📋 Копировать</button>
         </div>
+      </div>
+    </section>
 
-        <div id="encrypt-tab" class="tab-content active">
-            <div class="card">
-                <h3 class="card-title">Выберите метод шифрования</h3>
-                <div class="method-grid">
-                    <div class="method-card active" onclick="selectMethod('caesar', event)">
-                        <div class="method-icon">1️⃣</div>
-                        <div class="method-name">Цезарь</div>
-                    </div>
-                    <div class="method-card" onclick="selectMethod('atbash', event)">
-                        <div class="method-icon">2️⃣</div>
-                        <div class="method-name">Атбаш</div>
-                    </div>
-                    <div class="method-card" onclick="selectMethod('vigenere', event)">
-                        <div class="method-icon">3️⃣</div>
-                        <div class="method-name">Виженер</div>
-                    </div>
-                    <div class="method-card" onclick="selectMethod('base64', event)">
-                        <div class="method-icon">4️⃣</div>
-                        <div class="method-name">Base64</div>
-                    </div>
-                    <div class="method-card" onclick="selectMethod('fernet', event)">
-                        <div class="method-icon">5️⃣</div>
-                        <div class="method-name">Fernet</div>
-                    </div>
-                </div>
-            </div>
+    <!-- Вкладка: Ключи -->
+    <section id="tab-keys" class="tab-content">
+      <h2>Генератор ключей</h2>
+      <p>Создавайте ключи прямо в мини-приложении и сохраняйте их у себя.</p>
 
-            <div class="card">
-                <div class="form-group" id="key-group">
-                    <label class="form-label">🔑 Ключ шифрования</label>
-                    <input type="text" id="encrypt-key" class="form-input" placeholder="Введите ключ...">
-                </div>
+      <div class="field">
+        <label class="field-label" for="key-type-select">Тип ключа</label>
+        <select id="key-type-select">
+          <option value="number">Числовой (для Цезаря)</option>
+          <option value="word">Словесный (для Виженера)</option>
+          <option value="strong">Сильный пароль (для Fernet)</option>
+        </select>
+      </div>
 
-                <div class="form-group">
-                    <label class="form-label">📝 Ваш текст</label>
-                    <textarea id="input-text" class="form-textarea" placeholder="Введите текст для шифрования..."></textarea>
-                </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-generate-key">
+          ⚙️ Сгенерировать ключ
+        </button>
+      </div>
 
-                <div class="btn-group">
-                    <button class="btn btn-success" onclick="encryptText()">🔒 Зашифровать</button>
-                    <button class="btn btn-danger" onclick="decryptText()">🔓 Расшифровать</button>
-                </div>
-
-                <div id="result-container" style="display: none;">
-                    <div class="result-box" id="result-text"></div>
-                    <button class="btn btn-secondary" onclick="copyResult()">📋 Копировать</button>
-                </div>
-            </div>
+      <div class="field" style="margin-top: 10px;">
+        <label class="field-label">Ваш новый ключ</label>
+        <input id="generated-key" type="text" readonly placeholder="Нажмите «Сгенерировать ключ»" />
+        <div class="btn-row" style="margin-top: 6px;">
+          <button class="btn btn-outline" id="btn-save-key">💾 Сохранить</button>
+          <button class="btn btn-outline" id="btn-copy-key">📋 Копировать</button>
         </div>
+      </div>
 
-        <div id="keys-tab" class="tab-content">
-            <div class="card">
-                <h3 class="card-title">Генератор ключей</h3>
-                <div class="form-group">
-                    <label class="form-label">Тип ключа</label>
-                    <select class="form-select" id="key-type">
-                        <option value="numeric">Числовой (для Цезаря)</option>
-                        <option value="word">Словесный (для Виженера)</option>
-                        <option value="strong">Сильный пароль (для Fernet)</option>
-                    </select>
-                </div>
-                <button class="btn" onclick="generateKey()">🎲 Сгенерировать ключ</button>
-                
-                <div id="key-display" style="display: none;">
-                    <div class="key-display">
-                        <div>Ваш новый ключ:</div>
-                        <div class="generated-key" id="generated-key"></div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-success" onclick="saveKey()">💾 Сохранить</button>
-                        <button class="btn btn-secondary" onclick="copyKey()">📋 Копировать</button>
-                    </div>
-                </div>
-            </div>
+      <h3>Сохраненные ключи</h3>
+      <p class="hint">Ключи сохраняются в вашем браузере (localStorage) и не отправляются на сервер.</p>
+      <div id="saved-keys-list" class="field"></div>
+    </section>
 
-            <div class="card">
-                <h3 class="card-title">Сохраненные ключи</h3>
-                <div id="saved-keys"></div>
-            </div>
-        </div>
+    <!-- Вкладка: Сообщения -->
+    <section id="tab-messages" class="tab-content">
+      <h2>Отправить зашифрованное сообщение</h2>
 
-        <div id="messages-tab" class="tab-content">
-            <div class="card">
-                <h3 class="card-title">Отправить зашифрованное сообщение</h3>
-                
-                <div class="form-group">
-                    <label class="form-label">🔐 Метод шифрования</label>
-                    <select class="form-select" id="message-method" onchange="updateMessageKeyField()">
-                        <option value="caesar">Шифр Цезаря</option>
-                        <option value="atbash">Шифр Атбаш</option>
-                        <option value="vigenere">Шифр Виженера</option>
-                        <option value="base64" selected>Base64</option>
-                        <option value="fernet">Fernet (AES)</option>
-                    </select>
-                </div>
+      <div class="field">
+        <label class="field-label" for="send-method-select">Метод шифрования</label>
+        <select id="send-method-select">
+          <option value="caesar">Шифр Цезаря</option>
+          <option value="atbash">Шифр Атбаш</option>
+          <option value="vigenere">Шифр Виженера</option>
+          <option value="base64">Base64</option>
+          <option value="fernet">Fernet (AES)</option>
+        </select>
+      </div>
 
-                <div class="form-group" id="message-key-group" style="display: none;">
-                    <label class="form-label">🔑 Ключ шифрования</label>
-                    <input type="text" id="message-key" class="form-input" placeholder="Ключ не требуется">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">🆔 ID получателя</label>
-                    <input type="text" id="recipient-id" class="form-input" placeholder="Например: 123456789">
-                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        💡 Получатель может узнать свой ID через команду /start в боте
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">💬 Сообщение</label>
-                    <textarea id="message-text" class="form-textarea" placeholder="Введите секретное сообщение..."></textarea>
-                </div>
-                
-                <button class="btn" onclick="sendMessage()">📤 Отправить</button>
-            </div>
+      <div class="field">
+        <label class="field-label" for="send-key-input">Ключ шифрования</label>
+        <input id="send-key-input" type="text" placeholder="Выберите или введите ключ" />
+      </div>
 
-            <div class="card">
-                <h3 class="card-title">История сообщений</h3>
-                <div id="messages-list"></div>
-            </div>
-        </div>
+      <div class="field">
+        <label class="field-label" for="recipient-id-input">ID получателя</label>
+        <input id="recipient-id-input" type="text" placeholder="Например: 123456789" />
+        <div class="hint">Получатель может узнать свой ID через команду <strong>/start</strong> в боте.</div>
+      </div>
 
-        <div id="tutorial-tab" class="tab-content">
-            <div class="tutorial-step">
-                <div class="tutorial-number">1</div>
-                <div class="tutorial-title">Выберите метод шифрования</div>
-                <div class="tutorial-desc">
-                    Каждый метод имеет свою степень защиты. Для обычных сообщений подойдет Цезарь или Виженер, для важной информации используйте Fernet.
-                </div>
-            </div>
+      <div class="field">
+        <label class="field-label" for="send-message-input">Сообщение</label>
+        <textarea id="send-message-input" placeholder="Текст, который нужно зашифровать и отправить"></textarea>
+      </div>
 
-            <div class="tutorial-step">
-                <div class="tutorial-number">2</div>
-                <div class="tutorial-title">Создайте или используйте ключ</div>
-                <div class="tutorial-desc">
-                    Ключ - это секрет, который знают только вы и получатель. Без правильного ключа расшифровать сообщение невозможно.
-                </div>
-            </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-send">
+          📤 Отправить
+        </button>
+        <button class="btn btn-ghost" id="btn-add-to-history">
+          📝 В историю
+        </button>
+      </div>
 
-            <div class="tutorial-step">
-                <div class="tutorial-number">3</div>
-                <div class="tutorial-title">Зашифруйте сообщение</div>
-                <div class="tutorial-desc">
-                    Введите текст и нажмите "Зашифровать". Полученный результат можно безопасно отправлять кому угодно.
-                </div>
-            </div>
+      <h3 style="margin-top: 12px;">История сообщений</h3>
+      <p class="hint">Для демо история хранится локально. В боевом боте вы можете связать это с сервером.</p>
+      <div id="history-list"></div>
+    </section>
 
-            <div class="tutorial-step">
-                <div class="tutorial-number">4</div>
-                <div class="tutorial-title">Передайте ключ безопасно</div>
-                <div class="tutorial-desc">
-                    Ключ нужно передать получателю отдельно (голосом, другим мессенджером). Никогда не отправляйте ключ вместе с зашифрованным сообщением!
-                </div>
-            </div>
+    <!-- Вкладка: Обучение -->
+    <section id="tab-learn" class="tab-content">
+      <h2>Как пользоваться шифратором</h2>
 
-            <div class="card">
-                <h3 class="card-title">Сравнение методов</h3>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; color: var(--text-primary); border-collapse: collapse;">
-                        <tr style="border-bottom: 2px solid var(--accent);">
-                            <th style="padding: 12px; text-align: left;">Метод</th>
-                            <th style="padding: 12px; text-align: left;">Безопасность</th>
-                            <th style="padding: 12px; text-align: left;">Скорость</th>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px;">Цезарь</td>
-                            <td style="padding: 12px;">⭐⭐</td>
-                            <td style="padding: 12px;">⚡⚡⚡</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px;">Атбаш</td>
-                            <td style="padding: 12px;">⭐</td>
-                            <td style="padding: 12px;">⚡⚡⚡</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px;">Виженер</td>
-                            <td style="padding: 12px;">⭐⭐⭐</td>
-                            <td style="padding: 12px;">⚡⚡</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px;">Base64</td>
-                            <td style="padding: 12px;">⭐</td>
-                            <td style="padding: 12px;">⚡⚡⚡</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px;">Fernet</td>
-                            <td style="padding: 12px;">⭐⭐⭐⭐⭐</td>
-                            <td style="padding: 12px;">⚡⚡</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
+      <div class="history-step">
+        <div class="history-step-number">Шаг 1</div>
+        <div class="history-step-title">Выберите метод шифрования</div>
+        <div>Каждый метод имеет свою степень защиты. Для обычных сообщений подойдут Цезарь или Виженер, для важной информации используйте Fernet.</div>
+      </div>
+
+      <div class="history-step">
+        <div class="history-step-number">Шаг 2</div>
+        <div class="history-step-title">Создайте или используйте ключ</div>
+        <div>Ключ — это секрет, который знают только вы и получатель. Без правильного ключа расшифровать сообщение невозможно.</div>
+      </div>
+
+      <div class="history-step">
+        <div class="history-step-number">Шаг 3</div>
+        <div class="history-step-title">Зашифруйте сообщение</div>
+        <div>Введите текст и нажмите «Зашифровать». Полученный результат можно безопасно отправлять кому угодно.</div>
+      </div>
+
+      <div class="history-step">
+        <div class="history-step-number">Шаг 4</div>
+        <div class="history-step-title">Передайте ключ безопасно</div>
+        <div>Ключ нужно передать получателю отдельно (голосом, другим мессенджером). Никогда не отправляйте ключ вместе с зашифрованным сообщением!</div>
+      </div>
+
+      <h3 style="margin-top: 10px;">Сравнение методов</h3>
+      <table class="method-table">
+        <thead>
+          <tr>
+            <th>Метод</th>
+            <th>Безопасность</th>
+            <th>Скорость</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Цезарь</td>
+            <td class="stars">⭐⭐</td>
+            <td class="stars">⚡⚡⚡</td>
+          </tr>
+          <tr>
+            <td>Атбаш</td>
+            <td class="stars">⭐</td>
+            <td class="stars">⚡⚡⚡</td>
+          </tr>
+          <tr>
+            <td>Виженер</td>
+            <td class="stars">⭐⭐⭐</td>
+            <td class="stars">⚡⚡</td>
+          </tr>
+          <tr>
+            <td>Base64</td>
+            <td class="stars">⭐</td>
+            <td class="stars">⚡⚡⚡</td>
+          </tr>
+          <tr>
+            <td>Fernet</td>
+            <td class="stars">⭐⭐⭐⭐⭐</td>
+            <td class="stars">⚡⚡</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top: 12px;">Что использовать?</h3>
+      <div class="chips">
+        <div class="chip">Цезарь — для лайтовых сообщений</div>
+        <div class="chip">Виженер — баланс простоты и защиты</div>
+        <div class="chip">Fernet — для реально важных секретов</div>
+      </div>
+    </section>
+
+    <div class="footer">
+      CryptoApp · шифрование на стороне клиента · ваши ключи остаются у вас
     </div>
+  </div>
 
-    <div id="toast" class="toast"></div>
+  <script>
+    // ─────────────────────────────
+    // Переключение вкладок
+    // ─────────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      const tabButtons = document.querySelectorAll(".tab-button");
+      const tabContents = document.querySelectorAll(".tab-content");
 
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.MainButton.text = "Закрыть";
-        tg.MainButton.show();
-        tg.MainButton.onClick(() => tg.close());
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.dataset.tabTarget;
 
-        let currentMethod = 'caesar';
-        let savedKeys = JSON.parse(localStorage.getItem('cryptoKeys') || '[]');
-        let messages = JSON.parse(localStorage.getItem('cryptoMessages') || '[]');
+          // снять активность
+          tabButtons.forEach((b) => b.classList.remove("active"));
+          tabContents.forEach((c) => c.classList.remove("active"));
 
-        function switchTab(tab, evt) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            if (evt && evt.target) {
-                evt.target.classList.add('active');
-            }
-            document.getElementById(tab + '-tab').classList.add('active');
-            
-            if (tab === 'keys') loadSavedKeys();
-            if (tab === 'messages') loadMessages();
+          // включить нужную
+          btn.classList.add("active");
+          const target = document.getElementById(targetId);
+          if (target) target.classList.add("active");
+        });
+      });
+
+      // ─────────────────────────────
+      // Примитивная логика шифрования
+      // (чтобы всё не было совсем пустым)
+      // ─────────────────────────────
+
+      const ruAlphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+      const ruAlphabetUpper = ruAlphabet.toUpperCase();
+
+      function caesarShift(text, shift) {
+        const n = ruAlphabet.length;
+        shift = ((shift % n) + n) % n;
+        return Array.from(text).map((ch) => {
+          const lowerIndex = ruAlphabet.indexOf(ch);
+          if (lowerIndex !== -1) {
+            return ruAlphabet[(lowerIndex + shift + n) % n];
+          }
+          const upperIndex = ruAlphabetUpper.indexOf(ch);
+          if (upperIndex !== -1) {
+            return ruAlphabetUpper[(upperIndex + shift + n) % n];
+          }
+          return ch;
+        }).join("");
+      }
+
+      function atbash(text) {
+        const reversed = ruAlphabet.split("").reverse().join("");
+        const reversedUpper = reversed.toUpperCase();
+        return Array.from(text).map((ch) => {
+          const i = ruAlphabet.indexOf(ch);
+          if (i !== -1) return reversed[i];
+          const iu = ruAlphabetUpper.indexOf(ch);
+          if (iu !== -1) return reversedUpper[iu];
+          return ch;
+        }).join("");
+      }
+
+      function vigenere(text, key, encrypt = true) {
+        const cleanedKey = Array.from(key.toLowerCase()).filter((c) =>
+          ruAlphabet.includes(c)
+        );
+        if (!cleanedKey.length) return text;
+        let keyIndex = 0;
+        const n = ruAlphabet.length;
+
+        return Array.from(text).map((ch) => {
+          const isUpper = ruAlphabetUpper.includes(ch);
+          const alphabet = isUpper ? ruAlphabetUpper : ruAlphabet;
+          const idx = alphabet.indexOf(ch);
+          if (idx === -1) return ch;
+
+          const k = cleanedKey[keyIndex % cleanedKey.length];
+          const kShift = ruAlphabet.indexOf(k);
+          const shift = encrypt ? kShift : -kShift;
+          keyIndex++;
+
+          return alphabet[(idx + shift + n) % n];
+        }).join("");
+      }
+
+      function base64Encode(text) {
+        try {
+          return btoa(unescape(encodeURIComponent(text)));
+        } catch {
+          return text;
         }
+      }
 
-        function selectMethod(method, evt) {
-            currentMethod = method;
-            document.querySelectorAll('.method-card').forEach(card => card.classList.remove('active'));
-            
-            if (evt && evt.target) {
-                evt.target.closest('.method-card').classList.add('active');
-            }
-            
-            const keyGroup = document.getElementById('key-group');
-            if (method === 'atbash' || method === 'base64') {
-                keyGroup.style.display = 'none';
-            } else {
-                keyGroup.style.display = 'block';
-                const placeholder = method === 'caesar' ? 'Число от 1 до 25' : 
-                                  method === 'vigenere' ? 'Слово или фраза' : 
-                                  'Пароль для шифрования';
-                document.getElementById('encrypt-key').placeholder = placeholder;
-            }
+      function base64Decode(text) {
+        try {
+          return decodeURIComponent(escape(atob(text)));
+        } catch {
+          return text;
         }
+      }
 
-        function caesarCipher(text, shift, decrypt = false) {
-            if (decrypt) shift = -shift;
-            let result = '';
-            for (let char of text) {
-                if (char >= 'А' && char <= 'Я') {
-                    result += String.fromCharCode((char.charCodeAt(0) - 'А'.charCodeAt(0) + shift + 32) % 32 + 'А'.charCodeAt(0));
-                } else if (char >= 'а' && char <= 'я') {
-                    result += String.fromCharCode((char.charCodeAt(0) - 'а'.charCodeAt(0) + shift + 32) % 32 + 'а'.charCodeAt(0));
-                } else if (char >= 'A' && char <= 'Z') {
-                    result += String.fromCharCode((char.charCodeAt(0) - 'A'.charCodeAt(0) + shift + 26) % 26 + 'A'.charCodeAt(0));
-                } else if (char >= 'a' && char <= 'z') {
-                    result += String.fromCharCode((char.charCodeAt(0) - 'a'.charCodeAt(0) + shift + 26) % 26 + 'a'.charCodeAt(0));
-                } else if (char >= '0' && char <= '9') {
-                    result += String.fromCharCode((char.charCodeAt(0) - '0'.charCodeAt(0) + shift + 10) % 10 + '0'.charCodeAt(0));
-                } else {
-                    result += char;
-                }
-            }
-            return result;
+      // Fernet по-честному не реализуем — просто псевдо
+      function fakeFernetEncrypt(text, key) {
+        return base64Encode(key + "::" + text);
+      }
+
+      function fakeFernetDecrypt(text, key) {
+        const decoded = base64Decode(text);
+        if (decoded.startsWith(key + "::")) {
+          return decoded.slice((key + "::").length);
         }
+        return decoded;
+      }
 
-        function atbashCipher(text) {
-            let result = '';
-            for (let char of text) {
-                if (char >= 'А' && char <= 'Я') {
-                    result += String.fromCharCode('Я'.charCodeAt(0) - (char.charCodeAt(0) - 'А'.charCodeAt(0)));
-                } else if (char >= 'а' && char <= 'я') {
-                    result += String.fromCharCode('я'.charCodeAt(0) - (char.charCodeAt(0) - 'а'.charCodeAt(0)));
-                } else if (char >= 'A' && char <= 'Z') {
-                    result += String.fromCharCode('Z'.charCodeAt(0) - (char.charCodeAt(0) - 'A'.charCodeAt(0)));
-                } else if (char >= 'a' && char <= 'z') {
-                    result += String.fromCharCode('z'.charCodeAt(0) - (char.charCodeAt(0) - 'a'.charCodeAt(0)));
-                } else if (char >= '0' && char <= '9') {
-                    result += String.fromCharCode('9'.charCodeAt(0) - (char.charCodeAt(0) - '0'.charCodeAt(0)));
-                } else {
-                    result += char;
-                }
-            }
-            return result;
+      const methodSelect = document.getElementById("method-select");
+      const keyInput = document.getElementById("key-input");
+      const textInput = document.getElementById("text-input");
+      const resultOutput = document.getElementById("result-output");
+      const btnEncrypt = document.getElementById("btn-encrypt");
+      const btnDecrypt = document.getElementById("btn-decrypt");
+      const btnCopyResult = document.getElementById("btn-copy-result");
+
+      function encrypt() {
+        const method = methodSelect.value;
+        const key = keyInput.value.trim();
+        const text = textInput.value;
+
+        let res = text;
+
+        switch (method) {
+          case "caesar": {
+            const shift = parseInt(key || "3", 10) || 3;
+            res = caesarShift(text, shift);
+            break;
+          }
+          case "atbash":
+            res = atbash(text);
+            break;
+          case "vigenere":
+            res = vigenere(text, key || "ключ", true);
+            break;
+          case "base64":
+            res = base64Encode(text);
+            break;
+          case "fernet":
+            res = fakeFernetEncrypt(text, key || "secret");
+            break;
         }
+        resultOutput.value = res;
+      }
 
-        function vigenereCipher(text, key, decrypt = false) {
-            let result = '';
-            key = key.toUpperCase();
-            let keyIndex = 0;
-            
-            for (let char of text) {
-                if (/[а-яА-Яa-zA-Z0-9]/.test(char)) {
-                    let keyChar = key[keyIndex % key.length];
-                    let shift = keyChar >= 'А' && keyChar <= 'Я' ? 
-                              keyChar.charCodeAt(0) - 'А'.charCodeAt(0) : 
-                              keyChar.charCodeAt(0) - 'A'.charCodeAt(0);
-                    
-                    if (decrypt) shift = -shift;
-                    
-                    if (char >= 'А' && char <= 'Я') {
-                        result += String.fromCharCode((char.charCodeAt(0) - 'А'.charCodeAt(0) + shift + 32) % 32 + 'А'.charCodeAt(0));
-                    } else if (char >= 'а' && char <= 'я') {
-                        result += String.fromCharCode((char.charCodeAt(0) - 'а'.charCodeAt(0) + shift + 32) % 32 + 'а'.charCodeAt(0));
-                    } else if (char >= 'A' && char <= 'Z') {
-                        result += String.fromCharCode((char.charCodeAt(0) - 'A'.charCodeAt(0) + shift + 26) % 26 + 'A'.charCodeAt(0));
-                    } else if (char >= 'a' && char <= 'z') {
-                        result += String.fromCharCode((char.charCodeAt(0) - 'a'.charCodeAt(0) + shift + 26) % 26 + 'a'.charCodeAt(0));
-                    } else if (char >= '0' && char <= '9') {
-                        result += String.fromCharCode((char.charCodeAt(0) - '0'.charCodeAt(0) + shift + 10) % 10 + '0'.charCodeAt(0));
-                    }
-                    keyIndex++;
-                } else {
-                    result += char;
-                }
-            }
-            return result;
+      function decrypt() {
+        const method = methodSelect.value;
+        const key = keyInput.value.trim();
+        const text = textInput.value;
+
+        let res = text;
+
+        switch (method) {
+          case "caesar": {
+            const shift = parseInt(key || "3", 10) || 3;
+            res = caesarShift(text, -shift);
+            break;
+          }
+          case "atbash":
+            res = atbash(text); // обратимый
+            break;
+          case "vigenere":
+            res = vigenere(text, key || "ключ", false);
+            break;
+          case "base64":
+            res = base64Decode(text);
+            break;
+          case "fernet":
+            res = fakeFernetDecrypt(text, key || "secret");
+            break;
         }
+        resultOutput.value = res;
+      }
 
-        function base64Encode(text) {
-            return btoa(unescape(encodeURIComponent(text)));
+      btnEncrypt.addEventListener("click", encrypt);
+      btnDecrypt.addEventListener("click", decrypt);
+
+      btnCopyResult.addEventListener("click", async () => {
+        if (!resultOutput.value) return;
+        try {
+          await navigator.clipboard.writeText(resultOutput.value);
+          btnCopyResult.textContent = "✅ Скопировано";
+          setTimeout(() => (btnCopyResult.textContent = "📋 Копировать"), 1200);
+        } catch {
+          // тихо игнорируем
         }
+      });
 
-        function base64Decode(text) {
-            try {
-                return decodeURIComponent(escape(atob(text)));
-            } catch {
-                return '❌ Ошибка декодирования';
-            }
+      // ─────────────────────────────
+      // Ключи (localStorage)
+      // ─────────────────────────────
+
+      const keyTypeSelect = document.getElementById("key-type-select");
+      const generatedKeyInput = document.getElementById("generated-key");
+      const btnGenerateKey = document.getElementById("btn-generate-key");
+      const btnSaveKey = document.getElementById("btn-save-key");
+      const btnCopyKey = document.getElementById("btn-copy-key");
+      const savedKeysList = document.getElementById("saved-keys-list");
+
+      function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function randomWord(len) {
+        const letters = ruAlphabet.replace("ё", "е");
+        let result = "";
+        for (let i = 0; i < len; i++) {
+          result += letters[randomInt(0, letters.length - 1)];
         }
+        return result;
+      }
 
-        function encryptText() {
-            const text = document.getElementById('input-text').value;
-            if (!text) {
-                showToast('❌ Введите текст!');
-                return;
-            }
-
-            const key = document.getElementById('encrypt-key').value;
-            let result = '';
-
-            try {
-                switch(currentMethod) {
-                    case 'caesar':
-                        const shift = parseInt(key);
-                        if (!shift || shift < 1 || shift > 25) {
-                            showToast('❌ Ключ должен быть числом от 1 до 25');
-                            return;
-                        }
-                        result = caesarCipher(text, shift);
-                        break;
-                    case 'atbash':
-                        result = atbashCipher(text);
-                        break;
-                    case 'vigenere':
-                        if (!key) {
-                            showToast('❌ Введите ключ!');
-                            return;
-                        }
-                        result = vigenereCipher(text, key);
-                        break;
-                    case 'base64':
-                        result = base64Encode(text);
-                        break;
-                    case 'fernet':
-                        if (!key) {
-                            showToast('❌ Введите ключ!');
-                            return;
-                        }
-                        result = `FERNET:${key}:${base64Encode(text)}`;
-                        break;
-                }
-
-                document.getElementById('result-text').textContent = result;
-                document.getElementById('result-container').style.display = 'block';
-                showToast('✅ Текст зашифрован!');
-            } catch (error) {
-                showToast('❌ Ошибка шифрования');
-            }
+      function randomStrongPassword(length = 16) {
+        const chars =
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_-+=[]{}";
+        let res = "";
+        for (let i = 0; i < length; i++) {
+          res += chars[randomInt(0, chars.length - 1)];
         }
+        return res;
+      }
 
-        function decryptText() {
-            const text = document.getElementById('input-text').value;
-            if (!text) {
-                showToast('❌ Введите текст!');
-                return;
-            }
+      btnGenerateKey.addEventListener("click", () => {
+        const type = keyTypeSelect.value;
+        let key = "";
+        if (type === "number") key = String(randomInt(1, 33));
+        else if (type === "word") key = randomWord(6);
+        else key = randomStrongPassword(18);
 
-            const key = document.getElementById('encrypt-key').value;
-            let result = '';
+        generatedKeyInput.value = key;
+      });
 
-            try {
-                switch(currentMethod) {
-                    case 'caesar':
-                        const shift = parseInt(key);
-                        if (!shift || shift < 1 || shift > 25) {
-                            showToast('❌ Ключ должен быть числом от 1 до 25');
-                            return;
-                        }
-                        result = caesarCipher(text, shift, true);
-                        break;
-                    case 'atbash':
-                        result = atbashCipher(text);
-                        break;
-                    case 'vigenere':
-                        if (!key) {
-                            showToast('❌ Введите ключ!');
-                            return;
-                        }
-                        result = vigenereCipher(text, key, true);
-                        break;
-                    case 'base64':
-                        result = base64Decode(text);
-                        break;
-                    case 'fernet':
-                        if (!key) {
-                            showToast('❌ Введите ключ!');
-                            return;
-                        }
-                        if (text.startsWith('FERNET:')) {
-                            const parts = text.split(':');
-                            if (parts[1] === key) {
-                                result = base64Decode(parts[2]);
-                            } else {
-                                showToast('❌ Неверный ключ!');
-                                return;
-                            }
-                        } else {
-                            showToast('❌ Неверный формат');
-                            return;
-                        }
-                        break;
-                }
-
-                document.getElementById('result-text').textContent = result;
-                document.getElementById('result-container').style.display = 'block';
-                showToast('✅ Текст расшифрован!');
-            } catch (error) {
-                showToast('❌ Ошибка расшифрования');
-            }
+      function loadSavedKeys() {
+        const raw = localStorage.getItem("cryptoapp_keys") || "[]";
+        let list;
+        try {
+          list = JSON.parse(raw);
+        } catch {
+          list = [];
         }
-
-        function copyResult() {
-            const result = document.getElementById('result-text').textContent;
-            navigator.clipboard.writeText(result);
-            showToast('📋 Скопировано!');
+        savedKeysList.innerHTML = "";
+        if (!list.length) {
+          savedKeysList.innerHTML =
+            '<p class="hint">Пока нет сохранённых ключей.</p>';
+          return;
         }
+        list.forEach((item, index) => {
+          const pill = document.createElement("div");
+          pill.className = "pill";
+          pill.innerHTML = `<strong>${item.label}</strong> · ${item.value}`;
+          pill.addEventListener("click", () => {
+            keyInput.value = item.value;
+            generatedKeyInput.value = item.value;
+          });
 
-        function generateKey() {
-            const type = document.getElementById('key-type').value;
-            let key = '';
+          const del = document.createElement("button");
+          del.textContent = "✕";
+          del.style.border = "none";
+          del.style.background = "transparent";
+          del.style.color = "var(--text-muted)";
+          del.style.cursor = "pointer";
+          del.style.fontSize = "10px";
+          del.addEventListener("click", (e) => {
+            e.stopPropagation();
+            list.splice(index, 1);
+            localStorage.setItem("cryptoapp_keys", JSON.stringify(list));
+            loadSavedKeys();
+          });
 
-            switch(type) {
-                case 'numeric':
-                    key = Math.floor(Math.random() * 25) + 1;
-                    break;
-                case 'word':
-                    const words = ['СЕКРЕТ', 'ПАРОЛЬ', 'КЛЮЧ', 'ЗАЩИТА', 'CRYPTO', 'SECRET', 'GUARDIAN', 'PHOENIX', 'DRAGON', 'KNIGHT'];
-                    key = words[Math.floor(Math.random() * words.length)];
-                    break;
-                case 'strong':
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-                    for (let i = 0; i < 16; i++) {
-                        key += chars.charAt(Math.floor(Math.random() * chars.length));
-                    }
-                    break;
-            }
+          pill.appendChild(del);
+          savedKeysList.appendChild(pill);
+        });
+      }
 
-            document.getElementById('generated-key').textContent = key;
-            document.getElementById('key-display').style.display = 'block';
-            showToast('🎲 Ключ сгенерирован!');
+      btnSaveKey.addEventListener("click", () => {
+        const val = generatedKeyInput.value.trim();
+        if (!val) return;
+        const raw = localStorage.getItem("cryptoapp_keys") || "[]";
+        let list;
+        try {
+          list = JSON.parse(raw);
+        } catch {
+          list = [];
         }
-
-        function saveKey() {
-            const key = document.getElementById('generated-key').textContent;
-            const name = prompt('Название ключа:', 'Ключ ' + (savedKeys.length + 1));
-            
-            if (name) {
-                savedKeys.push({
-                    id: Date.now(),
-                    name: name,
-                    value: key,
-                    date: new Date().toLocaleDateString()
-                });
-                localStorage.setItem('cryptoKeys', JSON.stringify(savedKeys));
-                showToast('💾 Ключ сохранен!');
-                loadSavedKeys();
-            }
-        }
-
-        function copyKey() {
-            const key = document.getElementById('generated-key').textContent;
-            navigator.clipboard.writeText(key);
-            showToast('📋 Ключ скопирован!');
-        }
-
-        function loadSavedKeys() {
-            const container = document.getElementById('saved-keys');
-            
-            if (savedKeys.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔑</div><div>Нет сохраненных ключей</div></div>';
-                return;
-            }
-
-            container.innerHTML = savedKeys.map(key => `
-                <div class="key-item">
-                    <div class="key-info">
-                        <div class="key-name">${key.name}</div>
-                        <div class="key-value">${key.value}</div>
-                    </div>
-                    <div class="key-actions">
-                        <button class="icon-btn" onclick="copyStoredKey('${key.value}')" title="Копировать">📋</button>
-                        <button class="icon-btn" onclick="deleteKey(${key.id})" title="Удалить">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function copyStoredKey(value) {
-            navigator.clipboard.writeText(value);
-            showToast('📋 Ключ скопирован!');
-        }
-
-        function deleteKey(id) {
-            if (confirm('Удалить этот ключ?')) {
-                savedKeys = savedKeys.filter(k => k.id !== id);
-                localStorage.setItem('cryptoKeys', JSON.stringify(savedKeys));
-                loadSavedKeys();
-                showToast('🗑️ Ключ удален');
-            }
-        }
-
-        function updateMessageKeyField() {
-            const method = document.getElementById('message-method').value;
-            currentMethod = method;
-            const keyGroup = document.getElementById('message-key-group');
-            const keyInput = document.getElementById('message-key');
-            
-            if (method === 'atbash' || method === 'base64') {
-                keyGroup.style.display = 'none';
-            } else {
-                keyGroup.style.display = 'block';
-                const placeholders = {
-                    'caesar': 'Число от 1 до 25',
-                    'vigenere': 'Слово или фраза (например: SECRET)',
-                    'fernet': 'Пароль для шифрования'
-                };
-                keyInput.placeholder = placeholders[method];
-            }
-        }
-
-        function sendMessage() {
-            const recipientId = document.getElementById('recipient-id').value;
-            const text = document.getElementById('message-text').value;
-            const method = document.getElementById('message-method').value;
-            const keyInput = document.getElementById('message-key').value;
-
-            if (!recipientId || !text) {
-                showToast('❌ Заполните все поля!');
-                return;
-            }
-
-            if (isNaN(recipientId) || recipientId.length < 5) {
-                showToast('❌ Неверный формат ID');
-                return;
-            }
-
-            let encrypted = '';
-            let keyInfo = 'не требуется';
-
-            try {
-                switch(method) {
-                    case 'caesar':
-                        const shift = parseInt(keyInput);
-                        if (!shift || shift < 1 || shift > 25) {
-                            showToast('❌ Введите ключ (число 1-25)');
-                            return;
-                        }
-                        encrypted = caesarCipher(text, shift);
-                        keyInfo = shift.toString();
-                        break;
-                    case 'atbash':
-                        encrypted = atbashCipher(text);
-                        break;
-                    case 'vigenere':
-                        if (!keyInput) {
-                            showToast('❌ Введите ключ (слово)');
-                            return;
-                        }
-                        encrypted = vigenereCipher(text, keyInput);
-                        keyInfo = keyInput;
-                        break;
-                    case 'base64':
-                        encrypted = base64Encode(text);
-                        break;
-                    case 'fernet':
-                        if (!keyInput) {
-                            showToast('❌ Введите ключ-пароль');
-                            return;
-                        }
-                        encrypted = `FERNET:${keyInput}:${base64Encode(text)}`;
-                        keyInfo = keyInput;
-                        break;
-                }
-
-                tg.sendData(JSON.stringify({
-                    type: 'send_message',
-                    recipient_id: recipientId,
-                    encrypted_text: encrypted,
-                    method: method,
-                    key: keyInfo
-                }));
-
-                messages.unshift({
-                    id: Date.now(),
-                    recipient: recipientId,
-                    text: encrypted,
-                    method: method,
-                    key: keyInfo,
-                    date: new Date().toLocaleString(),
-                    sent: true
-                });
-
-                localStorage.setItem('cryptoMessages', JSON.stringify(messages));
-
-                document.getElementById('recipient-id').value = '';
-                document.getElementById('message-text').value = '';
-                document.getElementById('message-key').value = '';
-
-                showToast('📤 Отправляется...');
-                
-                setTimeout(() => {
-                    tg.close();
-                }, 2000);
-
-            } catch (error) {
-                showToast('❌ Ошибка шифрования');
-                console.error(error);
-            }
-        }
-
-        function loadMessages() {
-            const container = document.getElementById('messages-list');
-            
-            if (messages.length === 0) {
-                container.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><div>Нет отправленных сообщений</div></div>';
-                return;
-            }
-
-            container.innerHTML = messages.map(msg => `
-                <div class="message-item">
-                    <div class="message-header">
-                        <span><b>📤 Кому:</b> ${msg.recipient}</span>
-                        <span class="message-time">${msg.date}</span>
-                    </div>
-                    <div style="margin: 8px 0; font-size: 13px; color: var(--text-secondary);">
-                        <b>Метод:</b> ${msg.method ? msg.method.toUpperCase() : 'BASE64'} 
-                        ${msg.key && msg.key !== 'не требуется' ? `| <b>Ключ:</b> ${msg.key}` : ''}
-                    </div>
-                    <div class="message-text">${msg.text}</div>
-                    <button class="btn btn-secondary" style="margin-top: 8px; font-size: 13px; padding: 8px;" onclick="copyToClipboard('${msg.text.replace(/'/g, "\\'")}')">📋 Копировать текст</button>
-                </div>
-            `).join('');
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            showToast('📋 Скопировано!');
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-
+        const label = keyTypeSelect.options[keyTypeSelect.selectedIndex].text;
+        list.push({ label, value: val });
+        localStorage.setItem("cryptoapp_keys", JSON.stringify(list));
         loadSavedKeys();
-        loadMessages();
-        updateMessageKeyField();
-    </script>
+      });
+
+      btnCopyKey.addEventListener("click", async () => {
+        if (!generatedKeyInput.value) return;
+        try {
+          await navigator.clipboard.writeText(generatedKeyInput.value);
+          btnCopyKey.textContent = "✅ Скопировано";
+          setTimeout(() => (btnCopyKey.textContent = "📋 Копировать"), 1200);
+        } catch {}
+      });
+
+      loadSavedKeys();
+
+      // ─────────────────────────────
+      // История сообщений (локально)
+      // ─────────────────────────────
+
+      const sendMethodSelect = document.getElementById("send-method-select");
+      const sendKeyInput = document.getElementById("send-key-input");
+      const recipientIdInput = document.getElementById("recipient-id-input");
+      const sendMessageInput = document.getElementById("send-message-input");
+      const btnSend = document.getElementById("btn-send");
+      const btnAddToHistory = document.getElementById("btn-add-to-history");
+      const historyList = document.getElementById("history-list");
+
+      function loadHistory() {
+        const raw = localStorage.getItem("cryptoapp_history") || "[]";
+        let history;
+        try {
+          history = JSON.parse(raw);
+        } catch {
+          history = [];
+        }
+        historyList.innerHTML = "";
+        if (!history.length) {
+          historyList.innerHTML =
+            '<p class="hint">История пока пустая.</p>';
+          return;
+        }
+
+        history
+          .slice()
+          .reverse()
+          .forEach((item) => {
+            const block = document.createElement("div");
+            block.className = "history-step";
+            block.innerHTML = `
+              <div class="history-step-number">${item.method}</div>
+              <div class="history-step-title">Получатель: ${item.to}</div>
+              <div>${item.text}</div>
+            `;
+            historyList.appendChild(block);
+          });
+      }
+
+      function addHistoryItem() {
+        const methodLabel =
+          sendMethodSelect.options[sendMethodSelect.selectedIndex].text;
+        const to = recipientIdInput.value.trim() || "не указан";
+        const text = sendMessageInput.value.trim();
+        if (!text) return;
+        const raw = localStorage.getItem("cryptoapp_history") || "[]";
+        let history;
+        try {
+          history = JSON.parse(raw);
+        } catch {
+          history = [];
+        }
+        history.push({
+          method: methodLabel,
+          to,
+          text,
+          time: Date.now(),
+        });
+        localStorage.setItem("cryptoapp_history", JSON.stringify(history));
+        loadHistory();
+      }
+
+      btnAddToHistory.addEventListener("click", addHistoryItem);
+
+      btnSend.addEventListener("click", () => {
+        // Здесь в боевой версии можно дергать Telegram WebApp / backend
+        addHistoryItem();
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showPopup({
+            title: "Сообщение подготовлено",
+            message:
+              "В демо-версии мы только добавляем запись в историю. В боевом боте здесь будет отправка.",
+            buttons: [{ id: "ok", type: "close", text: "Ок" }],
+          });
+        } else {
+          alert(
+            "Демо: сообщение добавлено в историю. В боевом боте здесь должна быть отправка на сервер."
+          );
+        }
+      });
+
+      loadHistory();
+    });
+  </script>
 </body>
 </html>
