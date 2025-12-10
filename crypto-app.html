@@ -446,33 +446,33 @@
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('encrypt')">🔒 Шифровать</button>
-            <button class="tab-btn" onclick="switchTab('keys')">🔑 Ключи</button>
-            <button class="tab-btn" onclick="switchTab('messages')">💬 Сообщения</button>
-            <button class="tab-btn" onclick="switchTab('tutorial')">📚 Обучение</button>
+            <button class="tab-btn active" onclick="switchTab('encrypt', event)">🔒 Шифровать</button>
+            <button class="tab-btn" onclick="switchTab('keys', event)">🔑 Ключи</button>
+            <button class="tab-btn" onclick="switchTab('messages', event)">💬 Сообщения</button>
+            <button class="tab-btn" onclick="switchTab('tutorial', event)">📚 Обучение</button>
         </div>
 
         <div id="encrypt-tab" class="tab-content active">
             <div class="card">
                 <h3 class="card-title">Выберите метод шифрования</h3>
                 <div class="method-grid">
-                    <div class="method-card active" onclick="selectMethod('caesar')">
+                    <div class="method-card active" onclick="selectMethod('caesar', event)">
                         <div class="method-icon">1️⃣</div>
                         <div class="method-name">Цезарь</div>
                     </div>
-                    <div class="method-card" onclick="selectMethod('atbash')">
+                    <div class="method-card" onclick="selectMethod('atbash', event)">
                         <div class="method-icon">2️⃣</div>
                         <div class="method-name">Атбаш</div>
                     </div>
-                    <div class="method-card" onclick="selectMethod('vigenere')">
+                    <div class="method-card" onclick="selectMethod('vigenere', event)">
                         <div class="method-icon">3️⃣</div>
                         <div class="method-name">Виженер</div>
                     </div>
-                    <div class="method-card" onclick="selectMethod('base64')">
+                    <div class="method-card" onclick="selectMethod('base64', event)">
                         <div class="method-icon">4️⃣</div>
                         <div class="method-name">Base64</div>
                     </div>
-                    <div class="method-card" onclick="selectMethod('fernet')">
+                    <div class="method-card" onclick="selectMethod('fernet', event)">
                         <div class="method-icon">5️⃣</div>
                         <div class="method-name">Fernet</div>
                     </div>
@@ -661,21 +661,26 @@
         let savedKeys = JSON.parse(localStorage.getItem('cryptoKeys') || '[]');
         let messages = JSON.parse(localStorage.getItem('cryptoMessages') || '[]');
 
-        function switchTab(tab) {
+        function switchTab(tab, evt) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            event.target.classList.add('active');
+            if (evt && evt.target) {
+                evt.target.classList.add('active');
+            }
             document.getElementById(tab + '-tab').classList.add('active');
             
             if (tab === 'keys') loadSavedKeys();
             if (tab === 'messages') loadMessages();
         }
 
-        function selectMethod(method) {
+        function selectMethod(method, evt) {
             currentMethod = method;
             document.querySelectorAll('.method-card').forEach(card => card.classList.remove('active'));
-            event.target.closest('.method-card').classList.add('active');
+            
+            if (evt && evt.target) {
+                evt.target.closest('.method-card').classList.add('active');
+            }
             
             const keyGroup = document.getElementById('key-group');
             if (method === 'atbash' || method === 'base64') {
@@ -751,383 +756,382 @@
                     } else if (char >= 'A' && char <= 'Z') {
                         result += String.fromCharCode((char.charCodeAt(0) - 'A'.charCodeAt(0) + shift + 26) % 26 + 'A'.charCodeAt(0));
                     } else if (char >= 'a' && char <= 'z') {
-                        result += String.fromCharCode((char.charCodeAt} else if (char >= 'a' && char <= 'z') {
-    result += String.fromCharCode((char.charCodeAt(0) - 'a'.charCodeAt(0) + shift + 26) % 26 + 'a'.charCodeAt(0));
-} else if (char >= '0' && char <= '9') {
-    result += String.fromCharCode((char.charCodeAt(0) - '0'.charCodeAt(0) + shift + 10) % 10 + '0'.charCodeAt(0));
-}
-keyIndex++;
-} else {
-    result += char;
-}
-}
-return result;
-}
-
-
+                        result += String.fromCharCode((char.charCodeAt(0) - 'a'.charCodeAt(0) + shift + 26) % 26 + 'a'.charCodeAt(0));
+                    } else if (char >= '0' && char <= '9') {
+                        result += String.fromCharCode((char.charCodeAt(0) - '0'.charCodeAt(0) + shift + 10) % 10 + '0'.charCodeAt(0));
+                    }
+                    keyIndex++;
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
 
         function base64Encode(text) {
-        return btoa(unescape(encodeURIComponent(text)));
-    }
-
-    function base64Decode(text) {
-        try {
-            return decodeURIComponent(escape(atob(text)));
-        } catch {
-            return '❌ Ошибка декодирования';
-        }
-    }
-
-    function encryptText() {
-        const text = document.getElementById('input-text').value;
-        if (!text) {
-            showToast('❌ Введите текст!');
-            return;
+            return btoa(unescape(encodeURIComponent(text)));
         }
 
-        const key = document.getElementById('encrypt-key').value;
-        let result = '';
+        function base64Decode(text) {
+            try {
+                return decodeURIComponent(escape(atob(text)));
+            } catch {
+                return '❌ Ошибка декодирования';
+            }
+        }
 
-        try {
-            switch(currentMethod) {
-                case 'caesar':
-                    const shift = parseInt(key);
-                    if (!shift || shift < 1 || shift > 25) {
-                        showToast('❌ Ключ должен быть числом от 1 до 25');
-                        return;
-                    }
-                    result = caesarCipher(text, shift);
-                    break;
-                case 'atbash':
-                    result = atbashCipher(text);
-                    break;
-                case 'vigenere':
-                    if (!key) {
-                        showToast('❌ Введите ключ!');
-                        return;
-                    }
-                    result = vigenereCipher(text, key);
-                    break;
-                case 'base64':
-                    result = base64Encode(text);
-                    break;
-                case 'fernet':
-                    if (!key) {
-                        showToast('❌ Введите ключ!');
-                        return;
-                    }
-                    result = `FERNET:${key}:${base64Encode(text)}`;
-                    break;
+        function encryptText() {
+            const text = document.getElementById('input-text').value;
+            if (!text) {
+                showToast('❌ Введите текст!');
+                return;
             }
 
-            document.getElementById('result-text').textContent = result;
-            document.getElementById('result-container').style.display = 'block';
-            showToast('✅ Текст зашифрован!');
-        } catch (error) {
-            showToast('❌ Ошибка шифрования');
-        }
-    }
+            const key = document.getElementById('encrypt-key').value;
+            let result = '';
 
-    function decryptText() {
-        const text = document.getElementById('input-text').value;
-        if (!text) {
-            showToast('❌ Введите текст!');
-            return;
-        }
-
-        const key = document.getElementById('encrypt-key').value;
-        let result = '';
-
-        try {
-            switch(currentMethod) {
-                case 'caesar':
-                    const shift = parseInt(key);
-                    if (!shift || shift < 1 || shift > 25) {
-                        showToast('❌ Ключ должен быть числом от 1 до 25');
-                        return;
-                    }
-                    result = caesarCipher(text, shift, true);
-                    break;
-                case 'atbash':
-                    result = atbashCipher(text);
-                    break;
-                case 'vigenere':
-                    if (!key) {
-                        showToast('❌ Введите ключ!');
-                        return;
-                    }
-                    result = vigenereCipher(text, key, true);
-                    break;
-                case 'base64':
-                    result = base64Decode(text);
-                    break;
-                case 'fernet':
-                    if (!key) {
-                        showToast('❌ Введите ключ!');
-                        return;
-                    }
-                    if (text.startsWith('FERNET:')) {
-                        const parts = text.split(':');
-                        if (parts[1] === key) {
-                            result = base64Decode(parts[2]);
-                        } else {
-                            showToast('❌ Неверный ключ!');
+            try {
+                switch(currentMethod) {
+                    case 'caesar':
+                        const shift = parseInt(key);
+                        if (!shift || shift < 1 || shift > 25) {
+                            showToast('❌ Ключ должен быть числом от 1 до 25');
                             return;
                         }
-                    } else {
-                        showToast('❌ Неверный формат');
-                        return;
-                    }
-                    break;
-            }
-
-            document.getElementById('result-text').textContent = result;
-            document.getElementById('result-container').style.display = 'block';
-            showToast('✅ Текст расшифрован!');
-        } catch (error) {
-            showToast('❌ Ошибка расшифрования');
-        }
-    }
-
-    function copyResult() {
-        const result = document.getElementById('result-text').textContent;
-        navigator.clipboard.writeText(result);
-        showToast('📋 Скопировано!');
-    }
-
-    function generateKey() {
-        const type = document.getElementById('key-type').value;
-        let key = '';
-
-        switch(type) {
-            case 'numeric':
-                key = Math.floor(Math.random() * 25) + 1;
-                break;
-            case 'word':
-                const words = ['СЕКРЕТ', 'ПАРОЛЬ', 'КЛЮЧ', 'ЗАЩИТА', 'CRYPTO', 'SECRET', 'GUARDIAN', 'PHOENIX', 'DRAGON', 'KNIGHT'];
-                key = words[Math.floor(Math.random() * words.length)];
-                break;
-            case 'strong':
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-                for (let i = 0; i < 16; i++) {
-                    key += chars.charAt(Math.floor(Math.random() * chars.length));
+                        result = caesarCipher(text, shift);
+                        break;
+                    case 'atbash':
+                        result = atbashCipher(text);
+                        break;
+                    case 'vigenere':
+                        if (!key) {
+                            showToast('❌ Введите ключ!');
+                            return;
+                        }
+                        result = vigenereCipher(text, key);
+                        break;
+                    case 'base64':
+                        result = base64Encode(text);
+                        break;
+                    case 'fernet':
+                        if (!key) {
+                            showToast('❌ Введите ключ!');
+                            return;
+                        }
+                        result = `FERNET:${key}:${base64Encode(text)}`;
+                        break;
                 }
-                break;
+
+                document.getElementById('result-text').textContent = result;
+                document.getElementById('result-container').style.display = 'block';
+                showToast('✅ Текст зашифрован!');
+            } catch (error) {
+                showToast('❌ Ошибка шифрования');
+            }
         }
 
-        document.getElementById('generated-key').textContent = key;
-        document.getElementById('key-display').style.display = 'block';
-        showToast('🎲 Ключ сгенерирован!');
-    }
+        function decryptText() {
+            const text = document.getElementById('input-text').value;
+            if (!text) {
+                showToast('❌ Введите текст!');
+                return;
+            }
 
-    function saveKey() {
-        const key = document.getElementById('generated-key').textContent;
-        const name = prompt('Название ключа:', 'Ключ ' + (savedKeys.length + 1));
-        
-        if (name) {
-            savedKeys.push({
-                id: Date.now(),
-                name: name,
-                value: key,
-                date: new Date().toLocaleDateString()
-            });
-            localStorage.setItem('cryptoKeys', JSON.stringify(savedKeys));
-            showToast('💾 Ключ сохранен!');
-            loadSavedKeys();
-        }
-    }
+            const key = document.getElementById('encrypt-key').value;
+            let result = '';
 
-    function copyKey() {
-        const key = document.getElementById('generated-key').textContent;
-        navigator.clipboard.writeText(key);
-        showToast('📋 Ключ скопирован!');
-    }
+            try {
+                switch(currentMethod) {
+                    case 'caesar':
+                        const shift = parseInt(key);
+                        if (!shift || shift < 1 || shift > 25) {
+                            showToast('❌ Ключ должен быть числом от 1 до 25');
+                            return;
+                        }
+                        result = caesarCipher(text, shift, true);
+                        break;
+                    case 'atbash':
+                        result = atbashCipher(text);
+                        break;
+                    case 'vigenere':
+                        if (!key) {
+                            showToast('❌ Введите ключ!');
+                            return;
+                        }
+                        result = vigenereCipher(text, key, true);
+                        break;
+                    case 'base64':
+                        result = base64Decode(text);
+                        break;
+                    case 'fernet':
+                        if (!key) {
+                            showToast('❌ Введите ключ!');
+                            return;
+                        }
+                        if (text.startsWith('FERNET:')) {
+                            const parts = text.split(':');
+                            if (parts[1] === key) {
+                                result = base64Decode(parts[2]);
+                            } else {
+                                showToast('❌ Неверный ключ!');
+                                return;
+                            }
+                        } else {
+                            showToast('❌ Неверный формат');
+                            return;
+                        }
+                        break;
+                }
 
-    function loadSavedKeys() {
-        const container = document.getElementById('saved-keys');
-        
-        if (savedKeys.length === 0) {
-            container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔑</div><div>Нет сохраненных ключей</div></div>';
-            return;
-        }
-
-        container.innerHTML = savedKeys.map(key => `
-            <div class="key-item">
-                <div class="key-info">
-                    <div class="key-name">${key.name}</div>
-                    <div class="key-value">${key.value}</div>
-                </div>
-                <div class="key-actions">
-                    <button class="icon-btn" onclick="copyStoredKey('${key.value}')" title="Копировать">📋</button>
-                    <button class="icon-btn" onclick="deleteKey(${key.id})" title="Удалить">🗑️</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function copyStoredKey(value) {
-        navigator.clipboard.writeText(value);
-        showToast('📋 Ключ скопирован!');
-    }
-
-    function deleteKey(id) {
-        if (confirm('Удалить этот ключ?')) {
-            savedKeys = savedKeys.filter(k => k.id !== id);
-            localStorage.setItem('cryptoKeys', JSON.stringify(savedKeys));
-            loadSavedKeys();
-            showToast('🗑️ Ключ удален');
-        }
-    }
-
-    function updateMessageKeyField() {
-        const method = document.getElementById('message-method').value;
-        currentMethod = method;
-        const keyGroup = document.getElementById('message-key-group');
-        const keyInput = document.getElementById('message-key');
-        
-        if (method === 'atbash' || method === 'base64') {
-            keyGroup.style.display = 'none';
-        } else {
-            keyGroup.style.display = 'block';
-            const placeholders = {
-                'caesar': 'Число от 1 до 25',
-                'vigenere': 'Слово или фраза (например: SECRET)',
-                'fernet': 'Пароль для шифрования'
-            };
-            keyInput.placeholder = placeholders[method];
-        }
-    }
-
-    function sendMessage() {
-        const recipientId = document.getElementById('recipient-id').value;
-        const text = document.getElementById('message-text').value;
-        const method = document.getElementById('message-method').value;
-        const keyInput = document.getElementById('message-key').value;
-
-        if (!recipientId || !text) {
-            showToast('❌ Заполните все поля!');
-            return;
+                document.getElementById('result-text').textContent = result;
+                document.getElementById('result-container').style.display = 'block';
+                showToast('✅ Текст расшифрован!');
+            } catch (error) {
+                showToast('❌ Ошибка расшифрования');
+            }
         }
 
-        if (isNaN(recipientId) || recipientId.length < 5) {
-            showToast('❌ Неверный формат ID');
-            return;
+        function copyResult() {
+            const result = document.getElementById('result-text').textContent;
+            navigator.clipboard.writeText(result);
+            showToast('📋 Скопировано!');
         }
 
-        let encrypted = '';
-        let keyInfo = 'не требуется';
+        function generateKey() {
+            const type = document.getElementById('key-type').value;
+            let key = '';
 
-        try {
-            switch(method) {
-                case 'caesar':
-                    const shift = parseInt(keyInput);
-                    if (!shift || shift < 1 || shift > 25) {
-                        showToast('❌ Введите ключ (число 1-25)');
-                        return;
+            switch(type) {
+                case 'numeric':
+                    key = Math.floor(Math.random() * 25) + 1;
+                    break;
+                case 'word':
+                    const words = ['СЕКРЕТ', 'ПАРОЛЬ', 'КЛЮЧ', 'ЗАЩИТА', 'CRYPTO', 'SECRET', 'GUARDIAN', 'PHOENIX', 'DRAGON', 'KNIGHT'];
+                    key = words[Math.floor(Math.random() * words.length)];
+                    break;
+                case 'strong':
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                    for (let i = 0; i < 16; i++) {
+                        key += chars.charAt(Math.floor(Math.random() * chars.length));
                     }
-                    encrypted = caesarCipher(text, shift);
-                    keyInfo = shift.toString();
-                    break;
-                case 'atbash':
-                    encrypted = atbashCipher(text);
-                    break;
-                case 'vigenere':
-                    if (!keyInput) {
-                        showToast('❌ Введите ключ (слово)');
-                        return;
-                    }
-                    encrypted = vigenereCipher(text, keyInput);
-                    keyInfo = keyInput;
-                    break;
-                case 'base64':
-                    encrypted = base64Encode(text);
-                    break;
-                case 'fernet':
-                    if (!keyInput) {
-                        showToast('❌ Введите ключ-пароль');
-                        return;
-                    }
-                    encrypted = `FERNET:${keyInput}:${base64Encode(text)}`;
-                    keyInfo = keyInput;
                     break;
             }
 
-            tg.sendData(JSON.stringify({
-                type: 'send_message',
-                recipient_id: recipientId,
-                encrypted_text: encrypted,
-                method: method,
-                key: keyInfo
-            }));
+            document.getElementById('generated-key').textContent = key;
+            document.getElementById('key-display').style.display = 'block';
+            showToast('🎲 Ключ сгенерирован!');
+        }
 
-            messages.unshift({
-                id: Date.now(),
-                recipient: recipientId,
-                text: encrypted,
-                method: method,
-                key: keyInfo,
-                date: new Date().toLocaleString(),
-                sent: true
-            });
+        function saveKey() {
+            const key = document.getElementById('generated-key').textContent;
+            const name = prompt('Название ключа:', 'Ключ ' + (savedKeys.length + 1));
+            
+            if (name) {
+                savedKeys.push({
+                    id: Date.now(),
+                    name: name,
+                    value: key,
+                    date: new Date().toLocaleDateString()
+                });
+                localStorage.setItem('cryptoKeys', JSON.stringify(savedKeys));
+                showToast('💾 Ключ сохранен!');
+                loadSavedKeys();
+            }
+        }
 
-            localStorage.setItem('cryptoMessages', JSON.stringify(messages));
+        function copyKey() {
+            const key = document.getElementById('generated-key').textContent;
+            navigator.clipboard.writeText(key);
+            showToast('📋 Ключ скопирован!');
+        }
 
-            document.getElementById('recipient-id').value = '';
-            document.getElementById('message-text').value = '';
-            document.getElementById('message-key').value = '';
+        function loadSavedKeys() {
+            const container = document.getElementById('saved-keys');
+            
+            if (savedKeys.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔑</div><div>Нет сохраненных ключей</div></div>';
+                return;
+            }
 
-            showToast('📤 Отправляется...');
+            container.innerHTML = savedKeys.map(key => `
+                <div class="key-item">
+                    <div class="key-info">
+                        <div class="key-name">${key.name}</div>
+                        <div class="key-value">${key.value}</div>
+                    </div>
+                    <div class="key-actions">
+                        <button class="icon-btn" onclick="copyStoredKey('${key.value}')" title="Копировать">📋</button>
+                        <button class="icon-btn" onclick="deleteKey(${key.id})" title="Удалить">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyStoredKey(value) {
+            navigator.clipboard.writeText(value);
+            showToast('📋 Ключ скопирован!');
+        }
+
+        function deleteKey(id) {
+            if (confirm('Удалить этот ключ?')) {
+                savedKeys = savedKeys.filter(k => k.id !== id);
+                localStorage.setItem('cryptoKeys', JSON.stringify(savedKeys));
+                loadSavedKeys();
+                showToast('🗑️ Ключ удален');
+            }
+        }
+
+        function updateMessageKeyField() {
+            const method = document.getElementById('message-method').value;
+            currentMethod = method;
+            const keyGroup = document.getElementById('message-key-group');
+            const keyInput = document.getElementById('message-key');
+            
+            if (method === 'atbash' || method === 'base64') {
+                keyGroup.style.display = 'none';
+            } else {
+                keyGroup.style.display = 'block';
+                const placeholders = {
+                    'caesar': 'Число от 1 до 25',
+                    'vigenere': 'Слово или фраза (например: SECRET)',
+                    'fernet': 'Пароль для шифрования'
+                };
+                keyInput.placeholder = placeholders[method];
+            }
+        }
+
+        function sendMessage() {
+            const recipientId = document.getElementById('recipient-id').value;
+            const text = document.getElementById('message-text').value;
+            const method = document.getElementById('message-method').value;
+            const keyInput = document.getElementById('message-key').value;
+
+            if (!recipientId || !text) {
+                showToast('❌ Заполните все поля!');
+                return;
+            }
+
+            if (isNaN(recipientId) || recipientId.length < 5) {
+                showToast('❌ Неверный формат ID');
+                return;
+            }
+
+            let encrypted = '';
+            let keyInfo = 'не требуется';
+
+            try {
+                switch(method) {
+                    case 'caesar':
+                        const shift = parseInt(keyInput);
+                        if (!shift || shift < 1 || shift > 25) {
+                            showToast('❌ Введите ключ (число 1-25)');
+                            return;
+                        }
+                        encrypted = caesarCipher(text, shift);
+                        keyInfo = shift.toString();
+                        break;
+                    case 'atbash':
+                        encrypted = atbashCipher(text);
+                        break;
+                    case 'vigenere':
+                        if (!keyInput) {
+                            showToast('❌ Введите ключ (слово)');
+                            return;
+                        }
+                        encrypted = vigenereCipher(text, keyInput);
+                        keyInfo = keyInput;
+                        break;
+                    case 'base64':
+                        encrypted = base64Encode(text);
+                        break;
+                    case 'fernet':
+                        if (!keyInput) {
+                            showToast('❌ Введите ключ-пароль');
+                            return;
+                        }
+                        encrypted = `FERNET:${keyInput}:${base64Encode(text)}`;
+                        keyInfo = keyInput;
+                        break;
+                }
+
+                tg.sendData(JSON.stringify({
+                    type: 'send_message',
+                    recipient_id: recipientId,
+                    encrypted_text: encrypted,
+                    method: method,
+                    key: keyInfo
+                }));
+
+                messages.unshift({
+                    id: Date.now(),
+                    recipient: recipientId,
+                    text: encrypted,
+                    method: method,
+                    key: keyInfo,
+                    date: new Date().toLocaleString(),
+                    sent: true
+                });
+
+                localStorage.setItem('cryptoMessages', JSON.stringify(messages));
+
+                document.getElementById('recipient-id').value = '';
+                document.getElementById('message-text').value = '';
+                document.getElementById('message-key').value = '';
+
+                showToast('📤 Отправляется...');
+                
+                setTimeout(() => {
+                    tg.close();
+                }, 2000);
+
+            } catch (error) {
+                showToast('❌ Ошибка шифрования');
+                console.error(error);
+            }
+        }
+
+        function loadMessages() {
+            const container = document.getElementById('messages-list');
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><div>Нет отправленных сообщений</div></div>';
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => `
+                <div class="message-item">
+                    <div class="message-header">
+                        <span><b>📤 Кому:</b> ${msg.recipient}</span>
+                        <span class="message-time">${msg.date}</span>
+                    </div>
+                    <div style="margin: 8px 0; font-size: 13px; color: var(--text-secondary);">
+                        <b>Метод:</b> ${msg.method ? msg.method.toUpperCase() : 'BASE64'} 
+                        ${msg.key && msg.key !== 'не требуется' ? `| <b>Ключ:</b> ${msg.key}` : ''}
+                    </div>
+                    <div class="message-text">${msg.text}</div>
+                    <button class="btn btn-secondary" style="margin-top: 8px; font-size: 13px; padding: 8px;" onclick="copyToClipboard('${msg.text.replace(/'/g, "\\'")}')">📋 Копировать текст</button>
+                </div>
+            `).join('');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            showToast('📋 Скопировано!');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
             
             setTimeout(() => {
-                tg.close();
-            }, 2000);
-
-        } catch (error) {
-            showToast('❌ Ошибка шифрования');
-            console.error(error);
-        }
-    }
-
-    function loadMessages() {
-        const container = document.getElementById('messages-list');
-        
-        if (messages.length === 0) {
-            container.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><div>Нет отправленных сообщений</div></div>';
-            return;
+                toast.classList.remove('show');
+            }, 3000);
         }
 
-        container.innerHTML = messages.map(msg => `
-            <div class="message-item">
-                <div class="message-header">
-                    <span><b>📤 Кому:</b> ${msg.recipient}</span>
-                    <span class="message-time">${msg.date}</span>
-                </div>
-                <div style="margin: 8px 0; font-size: 13px; color: var(--text-secondary);">
-                    <b>Метод:</b> ${msg.method ? msg.method.toUpperCase() : 'BASE64'} 
-                    ${msg.key && msg.key !== 'не требуется' ? `| <b>Ключ:</b> ${msg.key}` : ''}
-                </div>
-                <div class="message-text">${msg.text}</div>
-                <button class="btn btn-secondary" style="margin-top: 8px; font-size: 13px; padding: 8px;" onclick="copyToClipboard('${msg.text.replace(/'/g, "\\'")}')">📋 Копировать текст</button>
-            </div>
-        `).join('');
-    }
-
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text);
-        showToast('📋 Скопировано!');
-    }
-
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.classList.add('show');
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    loadSavedKeys();
-    loadMessages();
-    updateMessageKeyField();
-</script>
+        loadSavedKeys();
+        loadMessages();
+        updateMessageKeyField();
+    </script>
+</body>
+</html>
